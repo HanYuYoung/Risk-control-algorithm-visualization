@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>L1 正则化为什么偏爱稀疏（直观几何演示）</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --panel: #151834;
+      --text: #e9ecf1;
+      --muted: #9aa4b2;
+      --accent: #6ae3ff;
+      --accent2: #ff8e6e;
+      --ok: #7dff8a;
+      --warn: #ffd66e;
+      --danger: #ff6e8e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    .wrap {
+      display: grid; grid-template-columns: 380px 1fr; gap: 16px; padding: 16px; min-height: 100vh;
+    }
+    .panel {
+      background: var(--panel); border: 1px solid #2a2f55; border-radius: 12px; padding: 14px 14px 6px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.02);
+    }
+    h2 { font-size: 18px; margin: 0 0 10px; }
+    h3 { font-size: 15px; margin: 16px 0 8px; color: var(--muted); font-weight: 600; }
+    .row { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+    .row label { width: 120px; color: var(--muted); }
+    .row input[type=range] { width: 100%; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border: 1px solid #2b2f52; padding: 6px 10px; border-radius: 999px; cursor: pointer;
+      color: var(--text); background: #1a1f3e; user-select: none; font-size: 13px;
+    }
+    .chip.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    button {
+      background: linear-gradient(180deg,#2a3d8a,#23346f); color: #fff; border: 1px solid #3350a6;
+      padding: 8px 12px; border-radius: 10px; cursor: pointer; font-weight: 600;
+    }
+    button.secondary { background: #232749; border-color: #353c72; }
+    .canvas-wrap { position: relative; height: 78vh; min-height: 520px; }
+    canvas {
+      width: 100%; height: 100%; background: radial-gradient(1200px 800px at 70% 20%, rgba(255,255,255,.04), rgba(255,255,255,0)), #0e1122;
+      border: 1px solid #262b52; border-radius: 12px;
+    }
+    .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 13px; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    .expl { line-height: 1.6; color: #e4e7ef; }
+    .expl strong { color: #ffffff; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #1b1f3f; padding: 2px 6px; border-radius: 6px; border: 1px solid #2b3170; }
+    .note { color: var(--muted); font-size: 13px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+    .stat { background: #171a34; border: 1px solid #2a2f55; padding: 8px 10px; border-radius: 10px; }
+    .stat .v { font-weight: 700; color: #fff; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script>
+    // 2D helpers
+    function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+    function sign(v) { return v < 0 ? -1 : (v > 0 ? 1 : 0); }
+    function norm2(x, y) { return Math.hypot(x, y); }
+    function norm1(x, y) { return Math.abs(x) + Math.abs(y); }
+    function dot(ax, ay, bx, by) { return ax * bx + ay * by; }
+
+    // Projection of a point (px,py) onto L2 ball radius r (center at origin)
+    function projectOntoL2Ball(px, py, r) {
+      const d = norm2(px, py);
+      if (d <= r || d === 0) return { x: px, y: py };
+      const s = r / d;
+      return { x: px * s, y: py * s };
+    }
+
+    // Projection of a point onto L1 ball radius tau (2D case; closed form)
+    // If |px| + |py| <= tau, return itself.
+    // Else apply soft-threshold with a shared threshold theta to hit L1 norm = tau.
+    function projectOntoL1Ball(px, py, tau) {
+      const a = Math.abs(px), b = Math.abs(py);
+      if (a + b <= tau) return { x: px, y: py };
+      // sort abs values
+      const sorted = [a, b].sort((u, v) => v - u); // desc
+      const [v1, v2] = sorted;
+      // Determine k and theta (from standard L1 projection algorithm)
+      let theta;
+      if (v1 - (tau) / 1 > 0 && v1 + v2 - tau > 0) {
+        // k=2 case
+        theta = (v1 + v2 - tau) / 2;
+      } else {
+        // k=1 case
+        theta = v1 - tau;
+      }
+      const sx = sign(px), sy = sign(py);
+      const x = sx * Math.max(a - theta, 0);
+      const y = sy * Math.max(b - theta, 0);
+      // Numerical guard: ensure exactly on L1 ball (tiny corrections)
+      const l1 = Math.abs(x) + Math.abs(y);
+      if (l1 !== 0) {
+        const scale = tau / l1;
+        return { x: x * scale, y: y * scale };
+      }
+      return { x: 0, y: 0 };
+    }
+
+    // Soft-thresholding (prox for L1) for comparison: prox_{lambda||.||1}(mu)
+    function softThreshold(px, py, t) {
+      function st(v, t) { return Math.sign(v) * Math.max(Math.abs(v) - t, 0); }
+      return { x: st(px, t), y: st(py, t) };
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.getElementById('cv');
+      const ctx = canvas.getContext('2d');
+
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.floor(rect.width * devicePixelRatio);
+        canvas.height = Math.floor(rect.height * devicePixelRatio);
+      }
+      resize();
+      window.addEventListener('resize', () => { resize(); draw(); });
+
+      // World coords: centered at origin, same scale on both axes
+      let worldScale = 80; // pixels per unit
+      function toScreen(x, y) {
+        const cx = canvas.width / 2, cy = canvas.height / 2;
+        return { x: cx + x * worldScale, y: cy - y * worldScale };
+      }
+      function toWorld(sx, sy) {
+        const cx = canvas.width / 2, cy = canvas.height / 2;
+        return { x: (sx - cx) / worldScale, y: (cy - sy) / worldScale };
+      }
+
+      // State
+      let constraint = 'l1'; // 'l1' | 'l2'
+      let tau = 2.0;         // constraint radius
+      let mu = { x: 2.8, y: 1.6 }; // center of circular loss contours f(w) = 1/2 ||w - mu||^2
+      let anim = { playing: false, r: 5.0, rTarget: 0.0, speed: 1.0 };
+
+      // UI bindings
+      const l1Btn = document.getElementById('chip-l1');
+      const l2Btn = document.getElementById('chip-l2');
+      const tauSlider = document.getElementById('tau');
+      const tauVal = document.getElementById('tau-val');
+      const speedSlider = document.getElementById('speed');
+      const speedVal = document.getElementById('speed-val');
+      const playBtn = document.getElementById('btn-play');
+      const stepBtn = document.getElementById('btn-step');
+      const resetBtn = document.getElementById('btn-reset');
+      const randomBtn = document.getElementById('btn-random-mu');
+      const zeroBtn = document.getElementById('btn-zero');
+
+      function updateChips() {
+        l1Btn.classList.toggle('active', constraint === 'l1');
+        l2Btn.classList.toggle('active', constraint === 'l2');
+      }
+      function updateTau(v) { tau = v; tauVal.textContent = v.toFixed(2); recomputeTargetRadius(); draw(); }
+      function updateSpeed(v) { anim.speed = v; speedVal.textContent = v.toFixed(2); }
+
+      l1Btn.addEventListener('click', () => { constraint = 'l1'; updateChips(); recomputeTargetRadius(); draw(); });
+      l2Btn.addEventListener('click', () => { constraint = 'l2'; updateChips(); recomputeTargetRadius(); draw(); });
+      tauSlider.addEventListener('input', e => updateTau(parseFloat(e.target.value)));
+      speedSlider.addEventListener('input', e => updateSpeed(parseFloat(e.target.value)));
+      playBtn.addEventListener('click', () => { anim.playing = !anim.playing; playBtn.textContent = anim.playing ? '暂停' : '播放'; });
+      stepBtn.addEventListener('click', () => { anim.r = Math.max(anim.rTarget, anim.r - 0.1 * anim.speed); draw(); });
+      resetBtn.addEventListener('click', () => { anim.r = 5.0; draw(); });
+      randomBtn.addEventListener('click', () => { mu = { x: (Math.random()*2-1)*3.2, y: (Math.random()*2-1)*3.2 }; recomputeTargetRadius(); draw(); });
+      zeroBtn.addEventListener('click', () => { mu = { x: 0, y: 0 }; recomputeTargetRadius(); draw(); });
+
+      // Dragging mu
+      let dragging = false; let dragOff = { x: 0, y: 0 };
+      canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const sx = (e.clientX - rect.left) * devicePixelRatio;
+        const sy = (e.clientY - rect.top) * devicePixelRatio;
+        const m = toScreen(mu.x, mu.y);
+        const hit = Math.hypot(sx - m.x, sy - m.y) < 14 * devicePixelRatio;
+        if (hit) { dragging = true; dragOff = toWorld(sx, sy); dragOff.x -= mu.x; dragOff.y -= mu.y; }
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const sx = (e.clientX - rect.left) * devicePixelRatio;
+        const sy = (e.clientY - rect.top) * devicePixelRatio;
+        const w = toWorld(sx, sy);
+        mu = { x: w.x - dragOff.x, y: w.y - dragOff.y };
+        recomputeTargetRadius();
+        draw();
+      });
+      window.addEventListener('mouseup', () => { dragging = false; });
+
+      function currentContactPoint() {
+        if (constraint === 'l2') return projectOntoL2Ball(mu.x, mu.y, tau);
+        return projectOntoL1Ball(mu.x, mu.y, tau);
+      }
+
+      function recomputeTargetRadius() {
+        const p = currentContactPoint();
+        anim.rTarget = norm2(mu.x - p.x, mu.y - p.y);
+        if (anim.r < anim.rTarget) anim.r = anim.rTarget; // keep valid
+        // Update numeric stats
+        document.getElementById('stat-mu').textContent = `(${mu.x.toFixed(2)}, ${mu.y.toFixed(2)})`;
+        document.getElementById('stat-contact').textContent = `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
+        const l1 = Math.abs(p.x) + Math.abs(p.y);
+        document.getElementById('stat-l1').textContent = l1.toFixed(2);
+      }
+      recomputeTargetRadius();
+
+      // Drawing
+      function drawGrid() {
+        const w = canvas.width, h = canvas.height;
+        ctx.save();
+        ctx.lineWidth = 1 * devicePixelRatio;
+        // axes
+        const origin = toScreen(0, 0);
+        ctx.strokeStyle = '#2c315c';
+        ctx.beginPath();
+        ctx.moveTo(0, origin.y); ctx.lineTo(w, origin.y);
+        ctx.moveTo(origin.x, 0); ctx.lineTo(origin.x, h);
+        ctx.stroke();
+        // tick labels
+        ctx.fillStyle = '#7f88b9';
+        ctx.font = `${12 * devicePixelRatio}px Inter, sans-serif`;
+        for (let t = -10; t <= 10; t++) {
+          const p = toScreen(t, 0);
+          ctx.fillRect(p.x, origin.y - 2 * devicePixelRatio, 1 * devicePixelRatio, 4 * devicePixelRatio);
+          const q = toScreen(0, t);
+          ctx.fillRect(origin.x - 2 * devicePixelRatio, q.y, 4 * devicePixelRatio, 1 * devicePixelRatio);
+        }
+        ctx.restore();
+      }
+
+      function drawL1Diamond(r) {
+        ctx.save();
+        ctx.lineWidth = 2 * devicePixelRatio;
+        ctx.strokeStyle = 'rgba(255, 212, 110, 0.95)';
+        ctx.fillStyle = 'rgba(255, 212, 110, 0.08)';
+        const p1 = toScreen(r, 0), p2 = toScreen(0, r), p3 = toScreen(-r, 0), p4 = toScreen(0, -r);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawL2Circle(r) {
+        ctx.save();
+        ctx.lineWidth = 2 * devicePixelRatio;
+        ctx.strokeStyle = 'rgba(106, 227, 255, 0.95)';
+        ctx.fillStyle = 'rgba(106, 227, 255, 0.08)';
+        const c = toScreen(0, 0);
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, r * worldScale, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawLossCircle(radius) {
+        ctx.save();
+        ctx.lineWidth = 2 * devicePixelRatio;
+        ctx.strokeStyle = 'rgba(255, 142, 110, 0.95)';
+        ctx.setLineDash([6 * devicePixelRatio, 6 * devicePixelRatio]);
+        const c = toScreen(mu.x, mu.y);
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, radius * worldScale, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      function drawPoint(x, y, color, r = 5) {
+        const s = toScreen(x, y);
+        ctx.save();
+        ctx.fillStyle = color; ctx.strokeStyle = '#000';
+        ctx.beginPath(); ctx.arc(s.x, s.y, r * devicePixelRatio, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+
+      function drawVector(from, to, color) {
+        const a = toScreen(from.x, from.y);
+        const b = toScreen(to.x, to.y);
+        ctx.save();
+        ctx.strokeStyle = color; ctx.lineWidth = 2 * devicePixelRatio;
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        ctx.restore();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        // Constraint region
+        if (constraint === 'l1') drawL1Diamond(tau); else drawL2Circle(tau);
+        // Loss contour shrinking
+        drawLossCircle(anim.r);
+        // mu and projection/contact
+        const p = currentContactPoint();
+        drawVector(p, mu, '#ffb39d');
+        drawPoint(mu.x, mu.y, '#ff8e6e', 5);
+        drawPoint(p.x, p.y, constraint === 'l1' ? '#ffd66e' : '#6ae3ff', 5);
+        // Labels
+        const m = toScreen(mu.x, mu.y);
+        ctx.save();
+        ctx.fillStyle = '#ffb39d';
+        ctx.font = `${14 * devicePixelRatio}px Inter, sans-serif`;
+        ctx.fillText('μ (损失最小点, 无约束)', m.x + 8 * devicePixelRatio, m.y - 6 * devicePixelRatio);
+        const q = toScreen(p.x, p.y);
+        ctx.fillStyle = constraint === 'l1' ? '#ffd66e' : '#6ae3ff';
+        ctx.fillText('接触点 = 约束下解', q.x + 8 * devicePixelRatio, q.y - 6 * devicePixelRatio);
+        ctx.restore();
+      }
+
+      // Animation loop
+      function tick() {
+        if (anim.playing) {
+          anim.r = Math.max(anim.rTarget, anim.r - 0.012 * anim.speed);
+          if (Math.abs(anim.r - anim.rTarget) < 1e-3) anim.playing = false;
+        }
+        draw();
+        requestAnimationFrame(tick);
+      }
+      tick();
+    });
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h2>可交互演示：为什么 L1 更容易在菱形的尖角处相交</h2>
+      <div class="chips" style="margin:8px 0 10px;">
+        <div id="chip-l1" class="chip active">L1 约束（菱形）</div>
+        <div id="chip-l2" class="chip">L2 约束（圆形）</div>
+      </div>
+
+      <div class="row">
+        <label>L1/L2 半径 τ</label>
+        <input id="tau" type="range" min="0.5" max="4" step="0.05" value="2" />
+        <div class="kbd" id="tau-val">2.00</div>
+      </div>
+
+      <div class="row">
+        <label>收缩速度</label>
+        <input id="speed" type="range" min="0.4" max="3" step="0.05" value="1" />
+        <div class="kbd" id="speed-val">1.00</div>
+      </div>
+
+      <div class="row" style="gap:8px; flex-wrap: wrap;">
+        <button id="btn-play">播放</button>
+        <button id="btn-step" class="secondary">单步收缩</button>
+        <button id="btn-reset" class="secondary">重置轮廓</button>
+        <button id="btn-random-mu" class="secondary">随机 μ</button>
+        <button id="btn-zero" class="secondary">μ = 0</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="note">无约束最优 μ</div>
+          <div class="v" id="stat-mu">(2.80, 1.60)</div>
+        </div>
+        <div class="stat">
+          <div class="note">接触点（解）</div>
+          <div class="v" id="stat-contact">(0.00, 0.00)</div>
+        </div>
+        <div class="stat">
+          <div class="note">解的 L1 范数</div>
+          <div class="v" id="stat-l1">0.00</div>
+        </div>
+      </div>
+
+      <h3>怎么玩</h3>
+      <div class="expl">
+        - 鼠标在画布上拖动橙色点 <span class="kbd">μ</span> 改变损失中心。
+        <br />- 拖动上面的滑块改变约束半径 <span class="kbd">τ</span>。
+        <br />- 点击“播放”观察橙色虚线圆（损失等值线）向中心收缩，直到<strong>首次接触</strong>约束区域边界。
+        <br />- 点击“L2 约束”对比：你会看到接触点通常不在坐标轴上，而 L1 的接触点很容易落在菱形尖角（某一坐标为 0）。
+      </div>
+
+      <h3>这幅图分别是谁</h3>
+      <div class="legend">
+        <div><span class="dot" style="background:#ff8e6e"></span>损失中心 μ（无约束最优点）</div>
+        <div><span class="dot" style="background:#ffd66e"></span>L1 接触点 / 解</div>
+        <div><span class="dot" style="background:#6ae3ff"></span>L2 接触点 / 解</div>
+        <div><span class="dot" style="background:#ffb39d"></span>向量（接触点 → μ）</div>
+      </div>
+
+      <h3>一句话直观解释</h3>
+      <div class="expl">
+        把<strong>损失的等值线</strong>想象成一圈圈<strong>橙色的圆</strong>，它们围绕 μ 一直<strong>向内收缩</strong>，直到第一次碰到<strong>可行域</strong>。
+        当可行域是 <strong>L1 菱形</strong> 时，菱形有<strong>尖角</strong>（坐标轴方向），所以<strong>最先接触</strong>的点很容易就是尖角位置，
+        这意味着某个坐标变成 <strong>0</strong>（稀疏）。而 <strong>L2 圆形</strong> 没有尖角，首次接触点一般不会把某个坐标推为 0。
+      </div>
+
+      <h3>为什么“尖角”=“稀疏”</h3>
+      <div class="expl">
+        - <strong>L1 可行域（|w1| + |w2| ≤ τ）</strong> 的边界是菱形，尖角落在坐标轴上（例如 (τ, 0)、(0, τ)）。
+        <br />- 当橙色等值线收缩时，<strong>第一接触点</strong>就是约束下的最优解。
+        <br />- 尖角处的法向量方向容易和等值线的“外法线”对齐，于是<strong>更可能</strong>在尖角先接触。
+        <br />- 尖角意味着<strong>有一个坐标正好为 0</strong>，也就是<strong>稀疏</strong>。
+      </div>
+
+      <h3>进一步理解（和公式的关系，选读）</h3>
+      <div class="expl">
+        这里我们用的是二次损失 <span class="kbd">f(w) = 1/2 ||w - μ||²</span>，它的等值线是圆形。
+        在 L1 约束 <span class="kbd">||w||₁ ≤ τ</span> 下的解，其几何意义就是：
+        从 μ 出发，找到离 μ 最近、同时落在菱形里的点。这等价于把 μ <strong>投影</strong>到 L1 球上。
+        这个投影会对坐标做“软阈值（soft-thresholding）”，阈值足够大时，某些坐标直接被<strong>推到 0</strong>。
+      </div>
+
+      <div class="note" style="margin-top:10px;">
+        小贴士：本页右侧画布显示的是 2D（两个参数 w1, w2）的情况；高维空间里，L1 的“尖角”更多，越容易产生稀疏。
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="canvas-wrap">
+        <canvas id="cv"></canvas>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+
