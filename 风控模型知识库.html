@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>风控模型知识库 - 机器学习在金融风控中的应用</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+
+        .header h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #87ceeb, #98fb98);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 300;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 1.4em;
+            color: #7f8c8d;
+            font-weight: 300;
+        }
+
+        .nav-menu {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+
+        .nav-menu h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2em;
+            font-weight: 300;
+        }
+
+        .nav-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .nav-link {
+            background: linear-gradient(135deg, #87ceeb, #98fb98);
+            color: #2c3e50;
+            padding: 20px 25px;
+            border-radius: 15px;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 1.1em;
+            box-shadow: 0 5px 20px rgba(135, 206, 235, 0.3);
+        }
+
+        .nav-link:hover {
+            background: linear-gradient(135deg, #7bb3d3, #8ae68a);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(135, 206, 235, 0.4);
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 50px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #87ceeb;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .section h3 {
+            color: #34495e;
+            margin: 30px 0 25px 0;
+            font-size: 1.6em;
+            font-weight: 400;
+        }
+
+        .subsection {
+            background: #f8f9fa;
+            border-left: 4px solid #87ceeb;
+            padding: 30px;
+            margin: 25px 0;
+            border-radius: 0 15px 15px 0;
+        }
+
+        .subsection h4 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: 400;
+        }
+
+        .algorithm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .algorithm-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            border: 2px solid #ecf0f1;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        .algorithm-card:hover {
+            border-color: #87ceeb;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(135, 206, 235, 0.15);
+        }
+
+        .algorithm-card h4 {
+            color: #87ceeb;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            font-weight: 500;
+        }
+
+        .pros-cons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .pros, .cons {
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .pros {
+            background: #f0fff4;
+            border-left: 4px solid #28a745;
+            border-radius: 0;
+        }
+
+        .cons {
+            background: #fff5f5;
+            border-left: 4px solid #dc3545;
+            border-radius: 0;
+        }
+
+        .pros h5, .cons h5 {
+            margin-bottom: 15px;
+            font-weight: 400;
+            font-size: 1.2em;
+        }
+
+        .pros h5 {
+            color: #28a745;
+        }
+
+        .cons h5 {
+            color: #dc3545;
+        }
+
+        .pros ul, .cons ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .pros li, .cons li {
+            margin-bottom: 8px;
+            padding-left: 0;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #87ceeb, #98fb98);
+            color: #2c3e50;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(135, 206, 235, 0.3);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(135, 206, 235, 0.4);
+        }
+
+        .metric-card h4 {
+            margin-bottom: 12px;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .process-flow {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .process-step {
+            background: linear-gradient(135deg, #87ceeb, #98fb98);
+            color: #2c3e50;
+            padding: 20px 25px;
+            border-radius: 15px;
+            font-weight: 500;
+            position: relative;
+            transition: all 0.3s ease;
+            margin: 5px;
+            min-width: 150px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(135, 206, 235, 0.3);
+        }
+
+        .process-step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(135, 206, 235, 0.4);
+        }
+
+        .process-step::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: #87ceeb;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+            font-weight: 600;
+            border: 2px solid #87ceeb;
+        }
+
+        .process-step::after {
+            content: '→';
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #87ceeb;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .process-step:last-child::after {
+            display: none;
+        }
+
+        .process-flow {
+            counter-reset: step-counter;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            border-left: 4px solid #f39c12;
+            box-shadow: 0 5px 20px rgba(243, 156, 18, 0.15);
+        }
+
+        .highlight-box h4 {
+            color: #d68910;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: 500;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 30px;
+            border-radius: 15px;
+            font-family: 'Courier New', monospace;
+            margin: 25px 0;
+            overflow-x: auto;
+            border: 1px solid #34495e;
+            box-shadow: 0 5px 20px rgba(44, 62, 80, 0.2);
+        }
+
+        .tooltip {
+            position: relative;
+            cursor: help;
+            border-bottom: 1px dotted #87ceeb;
+            color: #87ceeb;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .interactive-demo {
+            background: #f8f9fa;
+            border: 2px dashed #87ceeb;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(135, 206, 235, 0.1);
+        }
+
+        .demo-button {
+            background: linear-gradient(135deg, #87ceeb, #98fb98);
+            color: #2c3e50;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 5px 20px rgba(135, 206, 235, 0.3);
+        }
+
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(135, 206, 235, 0.4);
+            background: linear-gradient(135deg, #7bb3d3, #8ae68a);
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 20px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #87ceeb, #98fb98);
+            color: white;
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+
+        .comparison-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .nav-links {
+                grid-template-columns: 1fr;
+            }
+            
+            .pros-cons {
+                grid-template-columns: 1fr;
+            }
+            
+            .process-flow {
+                flex-direction: column;
+            }
+            
+            .process-step::after {
+                content: '↓';
+                right: auto;
+                bottom: -20px;
+                top: auto;
+                color: #87ceeb;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 风控模型知识库</h1>
+            <p>机器学习在金融风控中的全面应用指南</p>
+        </div>
+
+        <div class="nav-menu">
+            <h2>📚 知识导航</h2>
+            <div class="nav-links">
+                <a href="#credit-scoring" class="nav-link">💳 信用评分模型</a>
+                <a href="#fraud-detection" class="nav-link">🛡️ 欺诈检测模型</a>
+                <a href="#model-evaluation" class="nav-link">📊 模型评估检测</a>
+                <a href="#ml-algorithms" class="nav-link">🤖 机器学习算法</a>
+                <a href="#interpretability" class="nav-link">🔍 模型可解释性</a>
+            </div>
+        </div>
+
+        <!-- 信用评分模型 -->
+        <div class="section" id="credit-scoring">
+            <h2>💳 信用评分模型</h2>
+            
+            <div class="highlight-box">
+                <h4>🎯 核心目标</h4>
+                <p>通过机器学习算法评估借款人的信用风险，为金融机构提供决策支持</p>
+            </div>
+
+            <div class="subsection">
+                <h4>🔧 优化算法选择</h4>
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>随机梯度下降 (SGD)</h4>
+                        <p><strong>特点：</strong>简单高效，适合大规模数据</p>
+                        <p><strong>适用场景：</strong>线性模型，快速迭代</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>自适应矩估计 (Adam)</h4>
+                        <p><strong>特点：</strong>自适应学习率，收敛速度快</p>
+                        <p><strong>适用场景：</strong>深度学习，复杂模型</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>动量优化 (Momentum)</h4>
+                        <p><strong>特点：</strong>减少震荡，加速收敛</p>
+                        <p><strong>适用场景：</strong>梯度下降优化</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🎛️ 贝叶斯优化算法</h4>
+                <p><strong>核心思想：</strong>通过构建目标函数的概率模型（高斯过程），智能地选择下一个要评估的超参数组合</p>
+                
+                <div class="process-flow">
+                    <div class="process-step">初始化<br><small>随机采样建立基线</small></div>
+                    <div class="process-step">高斯过程建模<br><small>拟合函数关系</small></div>
+                    <div class="process-step">采集函数选择<br><small>EI/UCB/PI策略</small></div>
+                    <div class="process-step">迭代优化<br><small>收敛到最优解</small></div>
+                </div>
+                
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>✅ 优势</h5>
+                        <ul>
+                            <li>高效搜索参数空间</li>
+                            <li>考虑参数不确定性</li>
+                            <li>适合昂贵的目标函数</li>
+                            <li>自动平衡探索和利用</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>❌ 劣势</h5>
+                        <ul>
+                            <li>计算复杂度较高</li>
+                            <li>需要先验知识</li>
+                            <li>参数设置敏感</li>
+                            <li>对高维参数空间效果有限</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🌳 树模型算法超参数详解</h4>
+                
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>决策树 (Decision Tree)</h4>
+                        <p><strong>核心超参数：</strong></p>
+                        <ul>
+                            <li><strong>max_depth：</strong>树的最大深度，防止过拟合</li>
+                            <li><strong>min_samples_split：</strong>分裂所需最小样本数</li>
+                            <li><strong>min_samples_leaf：</strong>叶节点最小样本数</li>
+                            <li><strong>criterion：</strong>分裂标准（gini/entropy）</li>
+                            <li><strong>max_features：</strong>每次分裂考虑的特征数</li>
+                        </ul>
+                        <p><strong>调优建议：</strong>从简单开始，逐步增加复杂度</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>随机森林 (Random Forest)</h4>
+                        <p><strong>核心超参数：</strong></p>
+                        <ul>
+                            <li><strong>n_estimators：</strong>树的数量，通常100-500</li>
+                            <li><strong>max_depth：</strong>单棵树的最大深度</li>
+                            <li><strong>min_samples_split：</strong>分裂最小样本数</li>
+                            <li><strong>max_features：</strong>随机选择特征数</li>
+                            <li><strong>bootstrap：</strong>是否使用自助采样</li>
+                        </ul>
+                        <p><strong>调优建议：</strong>先调n_estimators，再调其他参数</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>GBDT (Gradient Boosting)</h4>
+                        <p><strong>核心超参数：</strong></p>
+                        <ul>
+                            <li><strong>n_estimators：</strong>提升树的数量</li>
+                            <li><strong>learning_rate：</strong>学习率，通常0.01-0.3</li>
+                            <li><strong>max_depth：</strong>单棵树的最大深度</li>
+                            <li><strong>subsample：</strong>子采样比例</li>
+                            <li><strong>min_samples_split：</strong>分裂最小样本数</li>
+                        </ul>
+                        <p><strong>调优建议：</strong>learning_rate和n_estimators需要平衡</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>AdaBoost</h4>
+                        <p><strong>核心超参数：</strong></p>
+                        <ul>
+                            <li><strong>n_estimators：</strong>弱学习器数量</li>
+                            <li><strong>learning_rate：</strong>学习率，控制权重更新</li>
+                            <li><strong>algorithm：</strong>算法类型（SAMME/SAMME.R）</li>
+                            <li><strong>base_estimator：</strong>基础学习器类型</li>
+                        </ul>
+                        <p><strong>调优建议：</strong>learning_rate通常设为1.0</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>XGBoost</h4>
+                        <p><strong>核心超参数：</strong></p>
+                        <ul>
+                            <li><strong>n_estimators：</strong>树的数量</li>
+                            <li><strong>learning_rate：</strong>学习率，通常0.01-0.3</li>
+                            <li><strong>max_depth：</strong>树的最大深度</li>
+                            <li><strong>subsample：</strong>行采样比例</li>
+                            <li><strong>colsample_bytree：</strong>列采样比例</li>
+                            <li><strong>reg_alpha：</strong>L1正则化参数</li>
+                            <li><strong>reg_lambda：</strong>L2正则化参数</li>
+                        </ul>
+                        <p><strong>调优建议：</strong>先调learning_rate和n_estimators</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>LightGBM</h4>
+                        <p><strong>核心超参数：</strong></p>
+                        <ul>
+                            <li><strong>n_estimators：</strong>树的数量</li>
+                            <li><strong>learning_rate：</strong>学习率</li>
+                            <li><strong>max_depth：</strong>树的最大深度</li>
+                            <li><strong>num_leaves：</strong>叶节点数量</li>
+                            <li><strong>feature_fraction：</strong>特征采样比例</li>
+                            <li><strong>bagging_fraction：</strong>样本采样比例</li>
+                            <li><strong>min_data_in_leaf：</strong>叶节点最小样本数</li>
+                        </ul>
+                        <p><strong>调优建议：</strong>num_leaves通常设为2^max_depth</p>
+                    </div>
+                </div>
+                
+                <div class="highlight-box">
+                    <h4>🎯 超参数调优策略</h4>
+                    <ul>
+                        <li><strong>网格搜索：</strong>穷举所有参数组合，适合参数空间小的情况</li>
+                        <li><strong>随机搜索：</strong>随机采样参数组合，适合参数空间大的情况</li>
+                        <li><strong>贝叶斯优化：</strong>智能搜索最优参数，适合昂贵的目标函数</li>
+                        <li><strong>分层调优：</strong>先调重要参数，再调次要参数</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>📈 性能优化要素</h4>
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>1. 特征选择</h4>
+                        <p>选择相关性强的特征，提高模型预测能力</p>
+                        <div class="interactive-demo">
+                            <button class="demo-button" onclick="showFeatureSelection()">查看特征选择方法</button>
+                        </div>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>2. 模型复杂度</h4>
+                        <p>适当增加模型复杂度，平衡偏差和方差</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>3. 超参数调优</h4>
+                        <p>交叉验证 + 网格搜索 + 贝叶斯搜索</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>4. 样本平衡</h4>
+                        <p>处理不平衡数据集，提高模型泛化能力</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>5. 数据归一化</h4>
+                        <p>标准化、鲁棒归一化、MinMax归一化</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🔄 业务适应性</h4>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <h4>实时监控</h4>
+                        <p>持续跟踪模型性能</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>增量更新</h4>
+                        <p>逐步更新模型参数</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>自适应学习率</h4>
+                        <p>动态调整学习速度</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 欺诈检测模型 -->
+        <div class="section" id="fraud-detection">
+            <h2>🛡️ 欺诈检测模型</h2>
+
+            <div class="highlight-box">
+                <h4>🎯 核心挑战</h4>
+                <p>在大量正常交易中识别极少数的欺诈行为，需要高精度和低误报率</p>
+            </div>
+
+            <div class="subsection">
+                <h4>🤖 算法对比分析</h4>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>算法</th>
+                            <th>优势</th>
+                            <th>劣势</th>
+                            <th>适用场景</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>逻辑回归</strong></td>
+                            <td>计算快速，易于理解</td>
+                            <td>非线性表现不佳，受特征相关性影响</td>
+                            <td>初步建模，基线模型</td>
+                        </tr>
+                        <tr>
+                            <td><strong>SVM</strong></td>
+                            <td>处理非线性，泛化能力强</td>
+                            <td>大规模数据计算复杂，高维特征要求高</td>
+                            <td>中等规模数据集</td>
+                        </tr>
+                        <tr>
+                            <td><strong>决策树</strong></td>
+                            <td>非线性处理，可解释性好</td>
+                            <td>容易过拟合，不稳定</td>
+                            <td>特征重要性分析</td>
+                        </tr>
+                        <tr>
+                            <td><strong>随机森林</strong></td>
+                            <td>克服过拟合，处理大规模数据</td>
+                            <td>模型复杂度高，计算资源需求大</td>
+                            <td>生产环境，高精度要求</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="subsection">
+                <h4>🔍 特征工程流程</h4>
+                
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>1. 数据预处理</h4>
+                        <p><strong>数据清洗：</strong>异常值检测和处理、重复数据删除、数据格式统一</p>
+                        <p><strong>数据平衡：</strong>SMOTE过采样、随机欠采样、权重调整</p>
+                        <p><strong>数据归一化：</strong>标准化、MinMax归一化、鲁棒归一化</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>2. 特征选择</h4>
+                        <p><strong>方差阈值：</strong>移除低方差特征</p>
+                        <p><strong>相关性分析：</strong>移除高相关特征</p>
+                        <p><strong>特征重要性：</strong>基于树模型的特征选择</p>
+                        <p><strong>递归特征消除：</strong>逐步移除不重要特征</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>3. 特征转换</h4>
+                        <p><strong>独热编码：</strong>处理分类变量</p>
+                        <p><strong>特征组合：</strong>创建交互特征</p>
+                        <p><strong>特征降维：</strong>PCA、LDA等</p>
+                        <p><strong>多项式特征：</strong>非线性特征生成</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>4. 特征工程最佳实践</h4>
+                        <p><strong>时序特征：</strong>滑动窗口统计、时间差特征、周期性特征</p>
+                        <p><strong>业务特征：</strong>比率特征、分箱特征、聚合特征</p>
+                        <p><strong>特征验证：</strong>特征稳定性检验、重要性分析、相关性监控</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>⚖️ 样本不均衡处理</h4>
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>过采样 (Oversampling)</h4>
+                        <p><strong>方法：</strong>SMOTE, ADASYN</p>
+                        <p><strong>适用：</strong>样本量充足时</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>欠采样 (Undersampling)</h4>
+                        <p><strong>方法：</strong>随机欠采样, Tomek Links</p>
+                        <p><strong>适用：</strong>样本量有限时</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>权重调整</h4>
+                        <p><strong>方法：</strong>类别权重, 样本权重</p>
+                        <p><strong>适用：</strong>算法支持权重时</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>📊 时序分析技术</h4>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <h4>滑动窗口</h4>
+                        <p>捕捉时间序列模式</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>趋势分析</h4>
+                        <p>识别异常趋势变化</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>周期性检测</h4>
+                        <p>发现重复性模式</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🚀 深度学习应用</h4>
+                <div class="highlight-box">
+                    <h4>大规模数据集处理策略</h4>
+                    <ul>
+                        <li><strong>并行计算：</strong>GPU加速，分布式训练</li>
+                        <li><strong>分布式架构：</strong>多节点协同计算</li>
+                        <li><strong>优化算法：</strong>Adam, RMSprop等</li>
+                        <li><strong>模型压缩：</strong>剪枝、量化、蒸馏</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🔧 异常检测挑战与解决</h4>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>🎯 主要挑战</h5>
+                        <ul>
+                            <li>数据量大，计算复杂</li>
+                            <li>异常数据稀少</li>
+                            <li>高维特征空间</li>
+                            <li>实时性要求高</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>💡 解决方案</h5>
+                        <ul>
+                            <li>并行计算优化</li>
+                            <li>特征筛选降维</li>
+                            <li>重采样技术</li>
+                            <li>在线学习算法</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模型评估检测 -->
+        <div class="section" id="model-evaluation">
+            <h2>📊 模型评估检测</h2>
+
+            <div class="subsection">
+                <h4>📈 核心评估指标</h4>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <h4>精确率 (Precision)</h4>
+                        <p>预测为正例中实际为正例的比例</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>召回率 (Recall)</h4>
+                        <p>实际正例中被正确预测的比例</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>F1分数</h4>
+                        <p>精确率和召回率的调和平均</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>AUC-ROC</h4>
+                        <p>ROC曲线下面积，综合性能指标</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>PR曲线</h4>
+                        <p>精确率-召回率曲线</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🔧 数据预处理技术</h4>
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>缺失值处理策略</h4>
+                        <p><strong>删除策略：</strong>列表删除、配对删除，适用于缺失率<5%</p>
+                        <p><strong>简单插值：</strong>均值、中位数、众数填充</p>
+                        <p><strong>高级插值：</strong>KNN插值、回归插值、多重插值</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>异常值检测与处理</h4>
+                        <p><strong>统计方法：</strong>Z-score、IQR方法检测异常值</p>
+                        <p><strong>机器学习方法：</strong>孤立森林、One-Class SVM、DBSCAN</p>
+                        <p><strong>处理策略：</strong>删除、替换、变换、保留</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>数据标准化与归一化</h4>
+                        <p><strong>标准化 (Z-score)：</strong>适用于正态分布数据</p>
+                        <p><strong>MinMax归一化：</strong>适用于有明确边界的数据</p>
+                        <p><strong>鲁棒归一化：</strong>对异常值不敏感</p>
+                    </div>
+                    
+                    <div class="algorithm-card">
+                        <h4>数据质量评估</h4>
+                        <p><strong>完整性检查：</strong>缺失值比例、数据覆盖率</p>
+                        <p><strong>一致性检查：</strong>数据格式、编码标准</p>
+                        <p><strong>准确性检查：</strong>数据范围、逻辑关系</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🛡️ 模型稳定性评估</h4>
+                <div class="process-flow">
+                    <div class="process-step">交叉验证</div>
+                    <div class="process-step">噪声测试</div>
+                    <div class="process-step">性能检测</div>
+                    <div class="process-step">灵敏度分析</div>
+                    <div class="process-step">异常值检测</div>
+                    <div class="process-step">多模型集成</div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🎯 集成学习策略</h4>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>Bagging (装袋法)</h5>
+                        <ul>
+                            <li>降低方差</li>
+                            <li>适合强分类器</li>
+                            <li>并行训练</li>
+                            <li>减少过拟合</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>Boosting (提升法)</h5>
+                        <ul>
+                            <li>降低偏差</li>
+                            <li>适合弱分类器</li>
+                            <li>串行训练</li>
+                            <li>提高精度</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🧪 A/B测试框架</h4>
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>平行测试</h4>
+                        <p>同时运行多个模型版本</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>序列测试</h4>
+                        <p>按时间顺序测试不同版本</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>交叉测试</h4>
+                        <p>用户群体交叉测试</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>用户分层</h4>
+                        <p>按用户特征分层测试</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🚀 新业务部署策略</h4>
+                <div class="highlight-box">
+                    <h4>平稳运行保障</h4>
+                    <ul>
+                        <li><strong>灰度测试：</strong>逐步扩大用户范围</li>
+                        <li><strong>回滚机制：</strong>快速恢复到稳定版本</li>
+                        <li><strong>实时监测：</strong>持续监控关键指标</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 机器学习算法应用 -->
+        <div class="section" id="ml-algorithms">
+            <h2>🤖 机器学习算法应用</h2>
+
+            <div class="subsection">
+                <h4>📉 数据降维技术</h4>
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>自编码器 (Autoencoder)</h4>
+                        <div class="pros-cons">
+                            <div class="pros">
+                                <h5>✅ 优势</h5>
+                                <ul>
+                                    <li>无监督学习</li>
+                                    <li>非线性降维</li>
+                                    <li>特征学习能力强</li>
+                                </ul>
+                            </div>
+                            <div class="cons">
+                                <h5>❌ 劣势</h5>
+                                <ul>
+                                    <li>可能过拟合</li>
+                                    <li>维度灾难风险</li>
+                                    <li>需要大量数据</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>孤立森林 (Isolation Forest)</h4>
+                        <p><strong>特点：</strong>适合大规模数据集，对高维特征不敏感</p>
+                        <p><strong>优势：</strong>计算效率高，可扩展性强</p>
+                        <p><strong>应用：</strong>异常检测，离群点识别</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🎨 数据增强技术</h4>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <h4>几何变换</h4>
+                        <p>平移、旋转、缩放、翻转</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>像素变换</h4>
+                        <p>噪声、对比度、亮度调整</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>空间变换</h4>
+                        <p>裁剪、遮盖、弹性变形</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>📊 行为分析与预测建模</h4>
+                <div class="highlight-box">
+                    <h4>应用场景</h4>
+                    <ul>
+                        <li><strong>智能交通：</strong>预测高峰期，优化交通流量</li>
+                        <li><strong>金融风控：</strong>用户行为分析，风险评估</li>
+                        <li><strong>电商推荐：</strong>用户偏好预测，个性化推荐</li>
+                        <li><strong>网络安全：</strong>异常行为检测，入侵识别</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>⚖️ 数据不平衡处理</h4>
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>算法内置能力</h4>
+                        <p><strong>随机森林：</strong>通过投票机制处理不平衡</p>
+                        <p><strong>XGBoost：</strong>内置权重调整机制</p>
+                        <p><strong>LightGBM：</strong>支持类别权重设置</p>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>高斯分布异常检测</h4>
+                        <p><strong>原理：</strong>中心极限定理，样本均值趋近正态分布</p>
+                        <p><strong>优势：</strong>只需计算μ和σ两个参数</p>
+                        <p><strong>适用：</strong>大规模数据集异常值检测</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🔧 正则化技术</h4>
+                <div class="pros-cons">
+                    <div class="pros">
+                        <h5>L1正则化 (Lasso)</h5>
+                        <ul>
+                            <li>产生稀疏性</li>
+                            <li>特征选择</li>
+                            <li>减少过拟合</li>
+                            <li>计算效率高</li>
+                        </ul>
+                    </div>
+                    <div class="cons">
+                        <h5>注意事项</h5>
+                        <ul>
+                            <li>不适用于高度相关特征</li>
+                            <li>需要合适的参数调节</li>
+                            <li>可能丢失重要信息</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 模型可解释性 -->
+        <div class="section" id="interpretability">
+            <h2>🔍 模型可解释性</h2>
+
+            <div class="highlight-box">
+                <h4>🎯 重要性</h4>
+                <p>在金融风控中，模型的可解释性至关重要，需要向监管部门和业务人员解释决策依据</p>
+            </div>
+
+            <div class="subsection">
+                <h4>🔍 LIME vs SHAP 技术对比</h4>
+                <div class="algorithm-grid">
+                    <div class="algorithm-card">
+                        <h4>LIME (局部可解释性)</h4>
+                        <p><strong>技术原理：</strong>在样本附近生成假数据，用简单模型拟合，突出局部特征的贡献</p>
+                        <p><strong>解释范围：</strong>局部解释（单个样本）</p>
+                        <p><strong>理论基础：</strong>局部线性近似</p>
+                        <p><strong>计算复杂度：</strong>中等（需要生成扰动样本）</p>
+                        <p><strong>稳定性：</strong>较低（每次运行结果可能不同）</p>
+                        <p><strong>适用场景：</strong>单个预测解释、模型调试</p>
+                        <div class="code-block" style="padding: 15px; margin: 15px 0; font-size: 0.9em;">
+# LIME使用示例
+from lime import lime_tabular
+explainer = lime_tabular.LimeTabularExplainer(
+    training_data, 
+    feature_names=feature_names,
+    class_names=class_names
+)
+explanation = explainer.explain_instance(
+    data_instance, 
+    model.predict_proba
+)
+                        </div>
+                    </div>
+                    <div class="algorithm-card">
+                        <h4>SHAP (全局可解释性)</h4>
+                        <p><strong>技术原理：</strong>基于博弈论，计算每个特征对预测的平均贡献</p>
+                        <p><strong>解释范围：</strong>全局解释（整体模型）</p>
+                        <p><strong>理论基础：</strong>博弈论中的Shapley值</p>
+                        <p><strong>计算复杂度：</strong>较高（需要计算所有特征组合）</p>
+                        <p><strong>稳定性：</strong>较高（结果一致性好）</p>
+                        <p><strong>适用场景：</strong>特征重要性分析、模型理解</p>
+                        <div class="code-block" style="padding: 15px; margin: 15px 0; font-size: 0.9em;">
+# SHAP使用示例
+import shap
+explainer = shap.TreeExplainer(model)
+shap_values = explainer.shap_values(X_test)
+shap.summary_plot(shap_values, X_test)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🛠️ 可解释性提升策略</h4>
+                <div class="process-flow">
+                    <div class="process-step">特征分析<br><small>重要性排序</small></div>
+                    <div class="process-step">可视化输出<br><small>评估指标展示</small></div>
+                    <div class="process-step">树模型<br><small>规则提取</small></div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>📊 可视化工具</h4>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <h4>特征重要性图</h4>
+                        <p>展示各特征对模型预测的贡献</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>决策路径图</h4>
+                        <p>可视化模型的决策过程</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>SHAP瀑布图</h4>
+                        <p>展示单个预测的特征贡献</p>
+                    </div>
+                    <div class="metric-card">
+                        <h4>LIME解释图</h4>
+                        <p>局部特征重要性可视化</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subsection">
+                <h4>🎯 业务应用建议</h4>
+                <div class="highlight-box">
+                    <h4>最佳实践</h4>
+                    <ul>
+                        <li><strong>分层解释：</strong>为不同受众提供不同层次的解释</li>
+                        <li><strong>规则提取：</strong>从复杂模型中提取可理解的规则</li>
+                        <li><strong>对比分析：</strong>与传统规则模型对比验证</li>
+                        <li><strong>持续监控：</strong>定期检查模型解释的合理性</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📚 总结与建议</h2>
+            <div class="highlight-box">
+                <h4>🎯 核心要点</h4>
+                <ul>
+                    <li><strong>模型选择：</strong>根据数据规模和业务需求选择合适的算法</li>
+                    <li><strong>特征工程：</strong>高质量的特征是模型成功的关键</li>
+                    <li><strong>评估体系：</strong>建立全面的模型评估和监控体系</li>
+                    <li><strong>可解释性：</strong>在准确性和可解释性之间找到平衡</li>
+                    <li><strong>持续优化：</strong>模型需要根据业务变化持续调整</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showFeatureSelection() {
+            alert('特征选择方法：\n1. 方差阈值：移除低方差特征\n2. 相关性分析：移除高相关特征\n3. 递归特征消除：逐步移除不重要特征\n4. 基于模型的特征选择：使用树模型评估重要性');
+        }
+
+        // 平滑滚动到锚点
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // 添加滚动效果
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top < window.innerHeight && rect.bottom > 0) {
+                    section.style.opacity = '1';
+                    section.style.transform = 'translateY(0)';
+                }
+            });
+        });
+
+        // 初始化动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(20px)';
+                section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            });
+        });
+    </script>
+</body>
+</html>
