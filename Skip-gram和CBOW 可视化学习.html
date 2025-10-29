@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word2Vec -> Skip-gram 与 CBOW</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #34495e;
+            justify-content: center;
+        }
+
+        .nav-tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            color: #ecf0f1;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav-tab:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .nav-tab.active {
+            background: #3498db;
+            color: white;
+            border-bottom-color: #2980b9;
+        }
+
+        .content-section {
+            display: none;
+            padding: 40px;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .subsection-title {
+            color: #34495e;
+            font-size: 1.4em;
+            margin: 25px 0 15px 0;
+        }
+
+        .highlight-box {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .highlight-box h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .math-formula {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 3px solid #3498db;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            overflow-x: auto;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+
+        .comparison-table th {
+            background: #34495e;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .comparison-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .neural-canvas {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .neural-canvas canvas {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            background: white;
+        }
+
+        .demo-section {
+            background: #ecf0f1;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button.active {
+            background: #e74c3c;
+        }
+
+        .word-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .word-tag {
+            background: #3498db;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .word-tag:hover {
+            background: #2980b9;
+        }
+
+        .result-box {
+            background: #d5f4e6;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #27ae60;
+            display: none;
+        }
+
+        .step-box {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 3px solid #3498db;
+        }
+
+        .step-number {
+            background: #3498db;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 0.9em;
+        }
+
+        .example-canvas {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .example-canvas canvas {
+            width: auto;
+            max-width: 40%;
+            height: auto;
+            border: 1px solid #ccc;
+            background: white;
+            flex-shrink: 0;
+        }
+        
+        .model-column .example-canvas {
+            display: block;
+            width: 100%;
+        }
+        
+        .model-column .example-canvas canvas {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .example-text {
+            flex: 1;
+            text-align: left;
+        }
+
+        .latex-formula {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 6px;
+            margin: 5px 0;
+            border-left: 3px solid #3498db;
+            text-align: center;
+        }
+
+        .formula-explanation {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 3px;
+            font-style: italic;
+        }
+
+        h5 {
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin: 15px 0 8px 0;
+            font-weight: bold;
+        }
+
+        .models-comparison {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .model-column {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .model-column h3 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .skipgram-column h3 {
+            background: #27ae60;
+            color: white;
+        }
+
+        .cbow-column h3 {
+            background: #e74c3c;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            input[type="text"] {
+                min-width: auto;
+            }
+            
+            .models-comparison {
+                flex-direction: column;
+            }
+            
+            .example-canvas {
+                flex-direction: column;
+            }
+            
+            .example-canvas canvas {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Skip-gram 与 CBOW 可视化学习</h1>
+            <p>Word2Vec</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('concept')">基础概念</button>
+            <button class="nav-tab" onclick="showSection('models')">模型对比</button>
+            <button class="nav-tab" onclick="showSection('demo')">交互演示</button>
+        </div>
+
+        <!-- 基础概念 -->
+        <div id="concept" class="content-section active">
+            <h2 class="section-title">词向量基础概念</h2>
+            
+            <div class="highlight-box">
+                <h4>核心问题</h4>
+                <p><strong>电脑怎么理解"猫"和"狗"很像？</strong></p>
+            </div>
+
+            <h3 class="subsection-title">传统方法的问题</h3>
+            
+            <h4>One-hot 编码可视化</h4>
+            <div class="example-canvas">
+                <canvas id="onehot-canvas" width="250" height="120"></canvas>
+                <div class="example-text">
+                    <h5>One-hot 编码示例</h5>
+                    <p><strong>猫 = [1, 0, 0, 0]</strong></p>
+                    <p><strong>狗 = [0, 1, 0, 0]</strong></p>
+                    <p><strong>点积 = 1×0 + 0×1 + 0×0 + 0×0 = 0</strong></p>
+                    <p style="color: #e74c3c; font-size: 1.2em;"><strong>❌ 完全无关！</strong></p>
+                    
+                    <h5>问题分析</h5>
+                    <p><strong>❌ 完全无关：</strong>猫和狗的向量点积为0，无法表示相似性</p>
+                    <p><strong>❌ 维度灾难：</strong>词汇表越大，向量越稀疏</p>
+                    <p><strong>❌ 无法扩展：</strong>需要手动定义每个词的关系</p>
+                </div>
+            </div>
+
+            <h3 class="subsection-title">解决方案：词向量</h3>
+            <p>把每个词表示成一个<strong>低维稠密向量</strong>，语义相近的词，距离也近！</p>
+            
+            <div class="math-formula">
+                猫 = [0.8, -0.3, 0.1]
+                狗 = [0.75, -0.28, 0.15]  ← 很像！
+                苹果 = [-0.1, 0.9, -0.7]  ← 完全不同
+            </div>
+
+            <div class="highlight-box">
+                <h4>核心思想：分布假设</h4>
+                <p><strong>"语义相似的词，出现在相似的上下文里"</strong></p>
+            </div>
+
+            <div class="math-formula">
+                例子：
+                我爱吃 [苹果]
+                我爱吃 [香蕉]
+                我家养 [猫]
+                我家养 [狗]
+                
+                → "苹果"和"香蕉"常跟"吃"一起 → 语义相近
+                → "猫"和"狗"常跟"养"一起 → 语义相近
+            </div>
+
+            <div class="highlight-box">
+                <h4>Word2Vec 就是用"上下文"来学习词向量！</h4>
+            </div>
+        </div>
+
+        <!-- 模型对比 -->
+        <div id="models" class="content-section">
+            <h2 class="section-title">Skip-gram 与 CBOW 深度对比</h2>
+            
+            <h3 class="subsection-title">核心区别对比表</h3>
+            <table class="comparison-table">
+                <tr>
+                    <th>维度</th>
+                    <th>Skip-gram</th>
+                    <th>CBOW</th>
+                </tr>
+                <tr>
+                    <td><strong>输入</strong></td>
+                    <td>1个中心词</td>
+                    <td>多个上下文词</td>
+                </tr>
+                <tr>
+                    <td><strong>输出</strong></td>
+                    <td>多个上下文词</td>
+                    <td>1个中心词</td>
+                </tr>
+                <tr>
+                    <td><strong>隐藏层</strong></td>
+                    <td>h = v_w (直接查表)</td>
+                    <td>h = avg(v_context1, v_context2, ...)</td>
+                </tr>
+                <tr>
+                    <td><strong>训练速度</strong></td>
+                    <td>较慢</td>
+                    <td>较快</td>
+                </tr>
+                <tr>
+                    <td><strong>适用场景</strong></td>
+                    <td>小数据集、稀有词</td>
+                    <td>大语料、常见词</td>
+                </tr>
+            </table>
+
+            <div class="models-comparison">
+                <!-- Skip-gram 列 -->
+                <div class="model-column skipgram-column">
+                    <h3>📤 Skip-gram 模型</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>任务定义</h4>
+                        <p>给定中心词 w(t)，预测它前后 window=2 内的上下文词</p>
+                    </div>
+
+                    <h4>例子可视化</h4>
+                    <div class="example-canvas">
+                        <canvas id="skipgram-example" width="600" height="150"></canvas>
+                    </div>
+
+                    <h4>数学公式推导</h4>
+                    
+                    <h5>1. 输入层 → 隐藏层</h5>
+                    <div class="latex-formula">
+                        $h = W_{input} \cdot \text{one\_hot}(w) = v_w$
+                        <div class="formula-explanation">$h$: 隐藏层向量, $W_{input}$: 输入权重矩阵, $v_w$: 词w的向量</div>
+                    </div>
+
+                    <h5>2. 隐藏层 → 输出层</h5>
+                    <div class="latex-formula">
+                        $\text{score}(c) = h \cdot v_c' = v_w \cdot v_c'$
+                        <div class="formula-explanation">$\text{score}(c)$: 词c的得分, $v_c'$: 输出矩阵中词c的向量</div>
+                    </div>
+
+                    <h5>3. Softmax 概率</h5>
+                    <div class="latex-formula">
+                        $P(c|w) = \frac{\exp(\text{score}(c))}{\sum_{w' \in V} \exp(\text{score}(w'))}$
+                        <div class="formula-explanation">$P(c|w)$: 给定中心词w，上下文词c的概率</div>
+                    </div>
+
+                    <h5>4. 损失函数</h5>
+                    <div class="latex-formula">
+                        $\text{Loss} = -\sum_{c \in \text{context}} \log P(c|w)$
+                        <div class="formula-explanation">最大化上下文预测概率，最小化负对数似然</div>
+                    </div>
+
+                    <h4>神经网络结构</h4>
+                    <div class="neural-canvas">
+                        <canvas id="skipgram-canvas" width="500" height="200"></canvas>
+                    </div>
+                    <div class="math-formula">
+                        <strong>Skip-gram:</strong> 输入层(1个词) → 隐藏层(词向量) → 输出层(多个上下文词)
+                    </div>
+                </div>
+
+                <!-- CBOW 列 -->
+                <div class="model-column cbow-column">
+                    <h3>📥 CBOW 模型</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>任务定义</h4>
+                        <p>给定上下文词，预测中心词</p>
+                    </div>
+
+                    <h4>例子可视化</h4>
+                    <div class="example-canvas">
+                        <canvas id="cbow-example" width="600" height="150"></canvas>
+                    </div>
+
+                    <h4>数学公式推导</h4>
+                    
+                    <h5>1. 输入层 → 隐藏层</h5>
+                    <div class="latex-formula">
+                        $h = \frac{1}{C} \sum_{c \in \text{context}} v_c = \frac{v_{\text{爱}} + v_{\text{吃}} + v_{\text{和}} + v_{\text{香蕉}}}{4}$
+                        <div class="formula-explanation">$h$: 隐藏层向量, $C$: 上下文词数量, $v_c$: 上下文词c的向量</div>
+                    </div>
+
+                    <h5>2. 隐藏层 → 输出层</h5>
+                    <div class="latex-formula">
+                        $\text{score}(w) = h \cdot v_w' = \text{avg}(v_{\text{context}}) \cdot v_w'$
+                        <div class="formula-explanation">$\text{score}(w)$: 中心词w的得分, $v_w'$: 输出矩阵中词w的向量</div>
+                    </div>
+
+                    <h5>3. Softmax 概率</h5>
+                    <div class="latex-formula">
+                        $P(w|\text{context}) = \frac{\exp(\text{score}(w))}{\sum_{w' \in V} \exp(\text{score}(w'))}$
+                        <div class="formula-explanation">$P(w|\text{context})$: 给定上下文，中心词w的概率</div>
+                    </div>
+
+                    <h5>4. 损失函数</h5>
+                    <div class="latex-formula">
+                        $\text{Loss} = -\log P(w|\text{context})$
+                        <div class="formula-explanation">最大化中心词预测概率，最小化负对数似然</div>
+                    </div>
+
+                    <h4>神经网络结构</h4>
+                    <div class="neural-canvas">
+                        <canvas id="cbow-canvas" width="500" height="200"></canvas>
+                    </div>
+                    <div class="math-formula">
+                        <strong>CBOW:</strong> 输入层(多个上下文词) → 隐藏层(平均向量) → 输出层(1个中心词)
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="subsection-title">训练效率对比</h3>
+            
+            <div class="highlight-box">
+                <h4>计算复杂度分析</h4>
+                <p><strong>Skip-gram：</strong>每个训练样本需要计算 |V| 个输出概率</p>
+                <p><strong>CBOW：</strong>每个训练样本需要计算 |V| 个输出概率</p>
+                <p><strong>关键区别：</strong>Skip-gram 对每个中心词要预测多个上下文，CBOW 对多个上下文只预测一个中心词</p>
+            </div>
+
+            <div class="math-formula">
+                Skip-gram 训练样本数：|语料| × |上下文窗口|
+                CBOW 训练样本数：|语料|
+                
+                → Skip-gram 训练时间更长，但每个词得到更多训练
+            </div>
+
+            <h3 class="subsection-title">实际应用建议</h3>
+            
+            <div class="models-comparison">
+                <div class="model-column skipgram-column">
+                    <h3>📤 Skip-gram 建议</h3>
+                    <div class="highlight-box">
+                        <h4>适用场景：</h4>
+                        <p>数据集较小（< 1M 词）</p>
+                        <p>需要处理稀有词</p>
+                        <p>对词向量质量要求高</p>
+                        <p>有充足的计算资源</p>
+                        <p><strong>特点：</strong>质量更高，特别是低频词，但训练慢</p>
+                    </div>
+                </div>
+
+                <div class="model-column cbow-column">
+                    <h3>📥 CBOW 建议</h3>
+                    <div class="highlight-box">
+                        <h4>适用场景：</h4>
+                        <p>数据集很大（> 10M 词）</p>
+                        <p>训练时间有限</p>
+                        <p>主要处理常见词</p>
+                        <p>需要快速原型验证</p>
+                        <p><strong>特点：</strong>训练快，对高频词效果好，质量稳定</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <h4>性能对比总结</h4>
+                <p><strong>建议：</strong>大多数情况下 Skip-gram 效果更好，除非有严格的训练时间限制</p>
+            </div>
+        </div>
+
+        <!-- 交互演示 -->
+        <div id="demo" class="content-section">
+            <h2 class="section-title">交互式演示</h2>
+            
+            <!-- Skip-gram 演示 -->
+            <div class="demo-section">
+                <h3>📤 Skip-gram 演示</h3>
+                <div class="highlight-box">
+                    <h4>任务：给定中心词，预测上下文词</h4>
+                    <p><strong>例子：</strong>给定"Python"，预测周围可能出现"编程"、"语言"、"代码"等词</p>
+                </div>
+
+                <div class="neural-canvas">
+                    <canvas id="skipgram-demo-canvas" width="800" height="300"></canvas>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="skipgram-input" placeholder="输入中心词，例如：Python、机器学习、算法..." />
+                    <button onclick="predictSkipgram()">预测上下文</button>
+                    <button onclick="resetSkipgram()">重置</button>
+                </div>
+
+                <div class="word-tags">
+                    <div class="word-tag" onclick="fillSkipgramWord('Python')">Python</div>
+                    <div class="word-tag" onclick="fillSkipgramWord('机器学习')">机器学习</div>
+                    <div class="word-tag" onclick="fillSkipgramWord('算法')">算法</div>
+                    <div class="word-tag" onclick="fillSkipgramWord('神经网络')">神经网络</div>
+                </div>
+
+                <div id="skipgram-result" class="result-box">
+                    <h4>Skip-gram 预测结果</h4>
+                    <p id="skipgram-result-text"></p>
+                </div>
+            </div>
+
+            <!-- CBOW 演示 -->
+            <div class="demo-section">
+                <h3>📥 CBOW 演示</h3>
+                <div class="highlight-box">
+                    <h4>任务：给定上下文词，预测中心词</h4>
+                    <p><strong>例子：</strong>给定"编程"、"语言"、"代码"，预测中心词可能是"Python"</p>
+                </div>
+
+                <div class="neural-canvas">
+                    <canvas id="cbow-demo-canvas" width="800" height="300"></canvas>
+                </div>
+
+                <div class="input-group">
+                    <input type="text" id="cbow-input" placeholder="输入上下文词（用空格分隔），例如：编程 语言 代码" />
+                    <button onclick="predictCBOW()">预测中心词</button>
+                    <button onclick="resetCBOW()">重置</button>
+                </div>
+
+                <div class="word-tags">
+                    <div class="word-tag" onclick="fillCBOWWords('编程 语言 代码')">编程 语言 代码</div>
+                    <div class="word-tag" onclick="fillCBOWWords('数据 模型 训练')">数据 模型 训练</div>
+                    <div class="word-tag" onclick="fillCBOWWords('数学 计算 逻辑')">数学 计算 逻辑</div>
+                    <div class="word-tag" onclick="fillCBOWWords('网络 层 节点')">网络 层 节点</div>
+                </div>
+
+                <div id="cbow-result" class="result-box">
+                    <h4>CBOW 预测结果</h4>
+                    <p id="cbow-result-text"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentModel = null;
+
+        // 示例数据
+        const vocab = {
+            'python': {x: 100, y: 200, freq: 0.8},
+            'java': {x: 150, y: 250, freq: 0.7},
+            '机器学习': {x: 200, y: 200, freq: 0.9},
+            '算法': {x: 250, y: 150, freq: 0.6},
+            '代码': {x: 300, y: 180, freq: 0.7},
+            '数据': {x: 350, y: 200, freq: 0.8},
+            '深度学习': {x: 400, y: 160, freq: 0.7},
+            '神经网络': {x: 450, y: 140, freq: 0.6},
+            '学习': {x: 500, y: 200, freq: 0.9},
+            '训练': {x: 550, y: 230, freq: 0.6},
+            '模型': {x: 600, y: 180, freq: 0.8}
+        };
+
+        const contextWords = {
+            'python': ['编程', '语言', '代码', '开发'],
+            '机器学习': ['算法', '数据', '模型', '训练'],
+            '深度学习': ['神经网络', '算法', '学习', '模型'],
+            '算法': ['数学', '计算', '逻辑', '优化']
+        };
+
+        // 导航功能
+        function showSection(sectionId) {
+            // 隐藏所有内容
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // 移除所有标签的active状态
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的内容
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+            
+            // 根据section绘制相应的canvas
+            if (sectionId === 'concept') {
+                drawOneHotExample();
+            } else if (sectionId === 'models') {
+                drawSkipgramNetwork();
+                drawCBOWNetwork();
+                drawSkipgramExample();
+                drawCBOWExample();
+            } else if (sectionId === 'demo') {
+                drawSkipgramDemo();
+                drawCBOWDemo();
+            }
+        }
+
+        // 绘制One-hot编码例子
+        function drawOneHotExample() {
+            const canvas = document.getElementById('onehot-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 简化词汇表，只保留4个词
+            const words = ['猫', '狗', '苹果', '香蕉'];
+            const cellSize = 25;
+            const startX = 15;
+            const startY = 15;
+            
+            // 绘制词汇标签
+            ctx.font = 'bold 11px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#2c3e50';
+            
+            words.forEach((word, i) => {
+                const x = startX + i * cellSize;
+                ctx.fillText(word, x + cellSize/2, startY - 3);
+            });
+            
+            // 绘制猫的向量 - 第一行
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(startX, startY, cellSize, cellSize);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('1', startX + cellSize/2, startY + cellSize/2 + 3);
+            
+            // 绘制其他位置为0
+            for (let i = 1; i < words.length; i++) {
+                const x = startX + i * cellSize;
+                ctx.fillStyle = '#ecf0f1';
+                ctx.fillRect(x, startY, cellSize, cellSize);
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillText('0', x + cellSize/2, startY + cellSize/2 + 3);
+            }
+            
+            // 绘制狗的向量 - 第二行
+            ctx.fillStyle = '#27ae60';
+            ctx.fillRect(startX, startY + 35, cellSize, cellSize);
+            ctx.fillStyle = 'white';
+            ctx.fillText('0', startX + cellSize/2, startY + 35 + cellSize/2 + 3);
+            
+            // 绘制狗向量中1的位置
+            ctx.fillStyle = '#27ae60';
+            ctx.fillRect(startX + cellSize, startY + 35, cellSize, cellSize);
+            ctx.fillStyle = 'white';
+            ctx.fillText('1', startX + cellSize + cellSize/2, startY + 35 + cellSize/2 + 3);
+            
+            // 绘制其他位置为0
+            for (let i = 2; i < words.length; i++) {
+                const x = startX + i * cellSize;
+                ctx.fillStyle = '#ecf0f1';
+                ctx.fillRect(x, startY + 35, cellSize, cellSize);
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillText('0', x + cellSize/2, startY + 35 + cellSize/2 + 3);
+            }
+        }
+
+        // 绘制Skip-gram网络结构
+        function drawSkipgramNetwork() {
+            const canvas = document.getElementById('skipgram-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 设置样式
+            ctx.strokeStyle = '#3498db';
+            ctx.fillStyle = '#3498db';
+            ctx.lineWidth = 3;
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 输入层
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(80, height/2, 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('中心词', 80, height/2 + 4);
+            
+            // 隐藏层
+            ctx.fillStyle = '#f39c12';
+            ctx.beginPath();
+            ctx.arc(250, height/2, 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.fillText('词向量', 250, height/2 + 4);
+            ctx.fillText('(300维)', 250, height/2 + 16);
+            
+            // 输出层
+            ctx.fillStyle = '#27ae60';
+            const outputs = ['上下文1', '上下文2', '上下文3', '上下文4'];
+            outputs.forEach((text, i) => {
+                const y = height/5 + (i * height/5);
+                ctx.beginPath();
+                ctx.arc(420, y, 25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 10px Arial';
+                ctx.fillText(text, 420, y + 4);
+                ctx.fillStyle = '#27ae60';
+                
+                // 连接线
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(280, height/2);
+                ctx.lineTo(395, y);
+                ctx.stroke();
+            });
+            
+            // 输入到隐藏层
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(105, height/2);
+            ctx.lineTo(220, height/2);
+            ctx.stroke();
+            
+            // 添加箭头
+            drawArrow(ctx, 220, height/2, 105, height/2);
+        }
+
+        // 绘制CBOW网络结构
+        function drawCBOWNetwork() {
+            const canvas = document.getElementById('cbow-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 设置样式
+            ctx.strokeStyle = '#3498db';
+            ctx.fillStyle = '#3498db';
+            ctx.lineWidth = 3;
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 输入层
+            ctx.fillStyle = '#27ae60';
+            const inputs = ['上下文1', '上下文2', '上下文3', '上下文4'];
+            inputs.forEach((text, i) => {
+                const y = height/5 + (i * height/5);
+                ctx.beginPath();
+                ctx.arc(80, y, 25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 10px Arial';
+                ctx.fillText(text, 80, y + 4);
+                ctx.fillStyle = '#27ae60';
+                
+                // 连接线
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(105, y);
+                ctx.lineTo(220, height/2);
+                ctx.stroke();
+            });
+            
+            // 隐藏层
+            ctx.fillStyle = '#f39c12';
+            ctx.beginPath();
+            ctx.arc(250, height/2, 30, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('平均向量', 250, height/2 + 4);
+            ctx.fillText('(300维)', 250, height/2 + 16);
+            
+            // 输出层
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath();
+            ctx.arc(420, height/2, 25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('中心词', 420, height/2 + 4);
+            
+            // 隐藏到输出
+            ctx.strokeStyle = '#f39c12';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(280, height/2);
+            ctx.lineTo(395, height/2);
+            ctx.stroke();
+            
+            // 添加箭头
+            drawArrow(ctx, 395, height/2, 280, height/2);
+        }
+
+        // 绘制Skip-gram例子
+        function drawSkipgramExample() {
+            const canvas = document.getElementById('skipgram-example');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const words = ['我', '爱', '吃', '苹果', '和', '香蕉'];
+            const centerIndex = 3; // 苹果
+            const contextIndices = [1, 2, 4, 5]; // 爱, 吃, 和, 香蕉
+            
+            // 绘制句子
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#2c3e50';
+            
+            words.forEach((word, i) => {
+                const x = 50 + i * 100;
+                const y = 50;
+                
+                // 绘制词框
+                if (i === centerIndex) {
+                    // 中心词 - 红色
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillRect(x - 30, y - 20, 60, 40);
+                    ctx.fillStyle = 'white';
+                } else if (contextIndices.includes(i)) {
+                    // 上下文词 - 绿色
+                    ctx.fillStyle = '#27ae60';
+                    ctx.fillRect(x - 30, y - 20, 60, 40);
+                    ctx.fillStyle = 'white';
+                } else {
+                    // 其他词 - 灰色
+                    ctx.fillStyle = '#bdc3c7';
+                    ctx.fillRect(x - 30, y - 20, 60, 40);
+                    ctx.fillStyle = '#2c3e50';
+                }
+                
+                ctx.fillText(word, x, y + 5);
+            });
+            
+            // 绘制箭头
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            const centerX = 50 + centerIndex * 100;
+            
+            contextIndices.forEach(i => {
+                const contextX = 50 + i * 100;
+                ctx.beginPath();
+                ctx.moveTo(centerX, 70);
+                ctx.lineTo(contextX, 30);
+                ctx.stroke();
+                
+                // 绘制箭头
+                drawArrow(ctx, centerX, 70, contextX, 30);
+            });
+            
+            // 添加标签
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('中心词 → 上下文词', 20, 100);
+            ctx.fillText('目标: P(爱|苹果), P(吃|苹果), P(和|苹果), P(香蕉|苹果)', 20, 120);
+        }
+
+        // 绘制CBOW例子
+        function drawCBOWExample() {
+            const canvas = document.getElementById('cbow-example');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const words = ['我', '爱', '吃', '苹果', '和', '香蕉'];
+            const centerIndex = 3; // 苹果
+            const contextIndices = [1, 2, 4, 5]; // 爱, 吃, 和, 香蕉
+            
+            // 绘制句子
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#2c3e50';
+            
+            words.forEach((word, i) => {
+                const x = 50 + i * 100;
+                const y = 50;
+                
+                // 绘制词框
+                if (i === centerIndex) {
+                    // 中心词 - 红色
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillRect(x - 30, y - 20, 60, 40);
+                    ctx.fillStyle = 'white';
+                } else if (contextIndices.includes(i)) {
+                    // 上下文词 - 绿色
+                    ctx.fillStyle = '#27ae60';
+                    ctx.fillRect(x - 30, y - 20, 60, 40);
+                    ctx.fillStyle = 'white';
+                } else {
+                    // 其他词 - 灰色
+                    ctx.fillStyle = '#bdc3c7';
+                    ctx.fillRect(x - 30, y - 20, 60, 40);
+                    ctx.fillStyle = '#2c3e50';
+                }
+                
+                ctx.fillText(word, x, y + 5);
+            });
+            
+            // 绘制箭头
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 2;
+            const centerX = 50 + centerIndex * 100;
+            
+            contextIndices.forEach(i => {
+                const contextX = 50 + i * 100;
+                ctx.beginPath();
+                ctx.moveTo(contextX, 30);
+                ctx.lineTo(centerX, 70);
+                ctx.stroke();
+                
+                // 绘制箭头
+                drawArrow(ctx, contextX, 30, centerX, 70);
+            });
+            
+            // 添加标签
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('上下文词 → 中心词', 20, 100);
+            ctx.fillText('目标: P(苹果|爱,吃,和,香蕉)', 20, 120);
+        }
+
+        function drawArrow(ctx, x1, y1, x2, y2) {
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const arrowLength = 12;
+            const arrowAngle = Math.PI / 6;
+            
+            ctx.save();
+            ctx.translate(x2, y2);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowLength, -arrowLength * Math.tan(arrowAngle));
+            ctx.lineTo(-arrowLength, arrowLength * Math.tan(arrowAngle));
+            ctx.closePath();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Skip-gram 演示功能
+        function drawSkipgramDemo() {
+            const canvas = document.getElementById('skipgram-demo-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制词汇
+            for (let word in vocab) {
+                const wordData = vocab[word];
+                const x = wordData.x;
+                const y = wordData.y;
+                
+                // 绘制词向量点
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(x, y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制词语标签
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(word, x, y - 18);
+            }
+
+            // Skip-gram: 一个中心词指向多个上下文词
+            ctx.strokeStyle = '#27ae60';
+            ctx.lineWidth = 3;
+            
+            const centerWord = 'Python';
+            const contextWordsList = ['编程', '语言', '代码'];
+            
+            for (let contextWord of contextWordsList) {
+                if (vocab[contextWord] && vocab[centerWord]) {
+                    ctx.beginPath();
+                    ctx.moveTo(vocab[centerWord].x, vocab[centerWord].y);
+                    ctx.lineTo(vocab[contextWord].x, vocab[contextWord].y);
+                    ctx.stroke();
+                    
+                    // 绘制箭头
+                    drawArrow(vocab[centerWord].x, vocab[centerWord].y,
+                              vocab[contextWord].x, vocab[contextWord].y);
+                }
+            }
+
+            // 高亮中心词
+            if (vocab[centerWord]) {
+                ctx.fillStyle = '#27ae60';
+                ctx.beginPath();
+                ctx.arc(vocab[centerWord].x, vocab[centerWord].y, 18, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText(centerWord, vocab[centerWord].x, vocab[centerWord].y - 18);
+            }
+
+            // 添加说明文字
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('一个中心词 → 预测多个上下文词', 50, 250);
+        }
+
+        function fillSkipgramWord(word) {
+            document.getElementById('skipgram-input').value = word;
+        }
+
+        function predictSkipgram() {
+            const input = document.getElementById('skipgram-input').value.trim();
+            const resultDiv = document.getElementById('skipgram-result');
+            const resultText = document.getElementById('skipgram-result-text');
+            
+            if (!input) {
+                resultText.textContent = '请输入一个中心词！';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            // Skip-gram预测：根据中心词，猜测上下文
+            if (input.toLowerCase() in contextWords) {
+                const contexts = contextWords[input.toLowerCase()].join('、');
+                resultText.textContent = `给定中心词 "${input}"，Skip-gram预测可能的上下文是："${contexts}"`;
+            } else {
+                const randomContexts = ['代码', '开发', '编程', '语言'];
+                resultText.textContent = `给定中心词 "${input}"，Skip-gram预测可能的上下文是："${randomContexts.join('、')}"`;
+            }
+
+            resultDiv.style.display = 'block';
+        }
+
+        function resetSkipgram() {
+            document.getElementById('skipgram-input').value = '';
+            document.getElementById('skipgram-result').style.display = 'none';
+            drawSkipgramDemo();
+        }
+
+        // CBOW 演示功能
+        function drawCBOWDemo() {
+            const canvas = document.getElementById('cbow-demo-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制词汇
+            for (let word in vocab) {
+                const wordData = vocab[word];
+                const x = wordData.x;
+                const y = wordData.y;
+                
+                // 绘制词向量点
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(x, y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制词语标签
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(word, x, y - 18);
+            }
+
+            // CBOW: 多个上下文词指向中心词
+            ctx.strokeStyle = '#3498db';
+            ctx.lineWidth = 3;
+            
+            const centerWord = '机器学习';
+            const contextWordsList = ['数据', '算法', '模型'];
+            
+            for (let contextWord of contextWordsList) {
+                if (vocab[contextWord] && vocab[centerWord]) {
+                    ctx.beginPath();
+                    ctx.moveTo(vocab[contextWord].x, vocab[contextWord].y);
+                    ctx.lineTo(vocab[centerWord].x, vocab[centerWord].y);
+                    ctx.stroke();
+                    
+                    // 绘制箭头
+                    drawArrow(vocab[contextWord].x, vocab[contextWord].y, 
+                              vocab[centerWord].x, vocab[centerWord].y);
+                }
+            }
+            
+            // 高亮中心词
+            if (vocab[centerWord]) {
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(vocab[centerWord].x, vocab[centerWord].y, 18, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText(centerWord, vocab[centerWord].x, vocab[centerWord].y - 18);
+            }
+
+            // 添加说明文字
+            ctx.fillStyle = '#7f8c8d';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('多个上下文词 → 预测一个中心词', 50, 250);
+        }
+
+        function fillCBOWWords(words) {
+            document.getElementById('cbow-input').value = words;
+        }
+
+        function predictCBOW() {
+            const input = document.getElementById('cbow-input').value.trim();
+            const resultDiv = document.getElementById('cbow-result');
+            const resultText = document.getElementById('cbow-result-text');
+            
+            if (!input) {
+                resultText.textContent = '请输入上下文词！';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            // CBOW预测：根据输入的上下文词，猜测中心词
+            const words = input.split(' ').filter(w => w.trim());
+            if (words.length === 0) {
+                resultText.textContent = '请输入有效的上下文词！';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            // 简单的预测逻辑
+            const predictions = {
+                '编程 语言 代码': 'Python',
+                '数据 模型 训练': '机器学习',
+                '数学 计算 逻辑': '算法',
+                '网络 层 节点': '神经网络'
+            };
+
+            const key = words.join(' ');
+            if (predictions[key]) {
+                resultText.textContent = `给定上下文 "${words.join('、')}"，CBOW预测中心词可能是："${predictions[key]}"`;
+            } else {
+                resultText.textContent = `给定上下文 "${words.join('、')}"，CBOW预测中心词可能是："Python"或"算法"`;
+            }
+
+            resultDiv.style.display = 'block';
+        }
+
+        function resetCBOW() {
+            document.getElementById('cbow-input').value = '';
+            document.getElementById('cbow-result').style.display = 'none';
+            drawCBOWDemo();
+        }
+
+        // 初始化
+        window.onload = function() {
+            showSection('concept');
+        };
+        
+        // 页面加载后立即绘制所有图
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                    drawOneHotExample();
+                }, 200);
+            });
+        } else {
+            // DOM已经加载完成
+            setTimeout(function() {
+                drawOneHotExample();
+            }, 200);
+        }
+    </script>
+</body>
+</html>
