@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>风控系统</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, '思源黑体', '微软雅黑', sans-serif;
+      background: #fff;
+      margin: 0;
+      padding: 0;
+      color: #222;
+    }
+    header {
+      background: #f7fbfe;
+      padding: 2rem 0 1rem 0;
+      text-align: center;
+      box-shadow: 0 2px 14px #eef4f9ee;
+    }
+    header h1 {
+      font-size: 2.2rem;
+      letter-spacing: 2px;
+      margin-bottom: 0.5rem;
+    }
+    header p {
+      color: #5588aa;
+      font-size: 1rem;
+      letter-spacing: 1px;
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+    }
+    
+    main {
+      margin: 0 auto;
+      padding: 0 1.5rem 2rem 1.5rem;
+      max-width: 980px;
+    }
+    .section-flow {
+      background: #fff;
+      box-shadow: 0 3px 16px #ddeaff55;
+      padding: 1.5rem 1rem 0.5rem 1rem;
+      margin-top: 1.5rem;
+      border-radius: 24px;
+      position: relative;
+      overflow-x: auto;
+    }
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 1.2rem;
+      display: flex; align-items:center;
+    }
+    .section-title svg {margin-right: .6rem;}
+
+    .flow-svg {
+      margin: 0 auto;
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+    .flow-label {
+      font-size: 1em;
+      transition: fill 0.2s;
+      cursor: pointer;
+    }
+    .flow-label:hover { fill: #2870d0; font-weight:bold; }
+    .tooltip {
+      display:inline-block; pointer-events:auto;
+      background: #2870d0;
+      color: #fff; font-size: .97em;
+      padding: 6px 12px;
+      border-radius:12px;
+      opacity:0; transition:opacity 0.18s; position:absolute; z-index:10;
+    }
+    /* 卡片区块 */
+    .card-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.6rem;
+      margin: 2.5rem 0 0.5rem 0;
+      justify-content: center;
+    }
+    .card {
+      background: #fbfcfe;
+      border-radius: 20px;
+      box-shadow: 0 2px 10px #dceffd44;
+      width: 420px; min-width: 280px;
+      padding: 1.2rem 1.1rem 1.2rem 1.1rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      transition: transform 0.18s, box-shadow 0.18s;
+      cursor:pointer;
+    }
+    .card:hover {box-shadow:0 4px 28px #aee1fc40; transform:translateY(-3px) scale(1.03);}
+    .card-header {font-weight: bold; font-size: 1.12rem; display:flex;align-items:center;gap:.6em;}
+    .card-header svg {height:1.4em;width:1.4em;}
+    .card-brief {color:#2870d0; margin:.6em 0 .8em 0;}
+    .expand-btn {
+      background: #dae6fa;
+      outline: none; border: none; color:#2870d0;
+      border-radius:1em; font-weight: bold;
+      padding:5px 12px; box-shadow:none; font-size:.93em;
+      cursor:pointer; margin-left:8px;
+      transition:background .18s;
+    }
+    .expand-btn:hover {background: #bedeff;}
+    .card-detail {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.34s cubic-bezier(.43,0,.65,1),opacity 0.2s;
+      opacity:0;
+      margin-top:.15em;
+    }
+    .card.expanded .card-detail {
+      max-height: 480px;
+      opacity:1;
+    }
+    .svg-model-diagram {display:block; margin:1.2em auto .4em auto; width:214px; height:74px;}
+    .svg-tree-model { width:100px;height:92px;display:inline-block; vertical-align:middle; }
+    .svg-shalou { width:86px;height:74px;display:inline-block; vertical-align:middle; }
+    .svg-graph { width:70px;height:70px;display:inline-block; }
+    @media (max-width:700px){
+      .card-group {flex-direction: column; align-items: center;}
+      .card {width:98%!important; min-width:0;}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>风控系统架构</h1>
+  <p>以风控系统为主线，串联核心模型与攻防对抗全景解读<br></p>
+</header>
+<main>
+  <!-- 风控系统分层架构（直接精练表述，不带原文提示） -->
+  <section class="section-flow">
+    <div class="section-title">
+      <svg width="24" height="24"><circle cx="12" cy="12" r="11" stroke="#2870d0" stroke-width="2" fill="none"/></svg>
+      风控系统总体架构流程
+    </div>
+    <div style="width:100%; overflow-x:auto;">
+      <svg class="flow-svg" viewBox="0 0 860 150">
+        <defs>
+          <linearGradient id="b1" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#d9eaff"/>
+            <stop offset="100%" stop-color="#bcdcff"/>
+          </linearGradient>
+        </defs>
+        <!-- 流程层级矩形 -->
+        <rect x="30" y="50" rx="17" ry="17" width="112" height="52" fill="url(#b1)"/>
+        <rect x="170" y="50" rx="17" ry="17" width="112" height="52" fill="url(#b1)"/>
+        <rect x="310" y="50" rx="17" ry="17" width="122" height="52" fill="url(#b1)"/>
+        <rect x="462" y="50" rx="17" ry="17" width="110" height="52" fill="url(#b1)"/>
+        <rect x="595" y="50" rx="17" ry="17" width="145" height="52" fill="url(#b1)"/>
+        <rect x="765" y="50" rx="17" ry="17" width="60" height="52" fill="url(#b1)"/>
+        <!-- 连接箭头 -->
+        <polygon points="142,76 170,76 162,81 170,76 162,71" fill="#2870d0"/>
+        <polygon points="282,76 310,76 302,81 310,76 302,71" fill="#2870d0"/>
+        <polygon points="432,76 462,76 454,81 462,76 454,71" fill="#2870d0"/>
+        <polygon points="572,76 595,76 587,81 595,76 587,71" fill="#2870d0"/>
+        <polygon points="740,76 765,76 757,81 765,76 757,71" fill="#2870d0"/>
+        <!-- 各层名称 -->
+        <text class="flow-label" id="dataLabel" x="49" y="83">数据层</text>
+        <text class="flow-label" id="featureLabel" x="185" y="83">特征层</text>
+        <text class="flow-label" id="ruleLabel" x="329" y="83">规则引擎</text>
+        <text class="flow-label" id="modelLabel" x="480" y="83">模型层</text>
+        <text class="flow-label" id="decisionLabel" x="615" y="73">决策层</text>
+        <text class="flow-label" id="decisionLabelSub" x="615" y="101" style="font-size: .79em;">（规则+模型融合）</text>
+        <text class="flow-label" id="execLabel" x="778" y="84">执行/监控</text>
+      </svg>
+      <!-- tooltips 浮层 -->
+      <span class="tooltip" id="tooltip" style="left:0;top:0;"></span>
+    </div>
+    <div style="margin:1.1rem 0 0 0;font-size:1em;color:#2870d0;">
+      风控系统通常采用分层与实时/离线结合的结构，包含如下环节：<br>
+      <b>数据层</b>（实时流Kafka+离线库Hive/ClickHouse）：采集所有用户行为、设备标识、交易日志等<br>
+      <b>特征层</b>（Flink/Redis、Spark）：加工出用户画像、统计特征等<br>
+      <b>规则引擎</b>（Drools/自研）：用于快速处理IP频繁变更、异常邀请等明确作弊<br>
+      <b>模型层</b>（XGBoost、LightGBM、ONNX、PMML）：实现高风险用户的自动评分<br>
+      <b>决策层</b>（规则与模型融合）：综合输出拦截/审核/放行等决策<br>
+      <b>执行与监控</b>：包括自动下发风控（限流、封号）、Dashboard看板和自动告警<br>
+      体系设计强调规则兜底+模型提升，并支持A/B实验及策略持续迭代优化。
+    </div>
+  </section>
+
+<div class="card-group">
+  <!-- 羊毛党反作弊 -->
+  <div class="card" tabindex="0">
+    <div class="card-header"><svg class="svg-tree-model" viewBox="0 0 40 40"><rect x="16" y="10" width="8" height="13" fill="#a1c4fd"/><rect x="10" y="30" width="8" height="8" fill="#bae1ff"/><rect x="22" y="30" width="8" height="8" fill="#bae1ff"/><circle cx="20" cy="7" r="6" fill="#61aef9"/></svg>羊毛党反作弊</div>
+    <div class="card-brief">主要监控注册/登录频率、设备指纹（UA、IMEI等）、IP地址变换、操作时长与路径、交易行为、邀请码及账号关联等典型指标，关注突发的高频行为、夜间频繁操作和地理异常等现象。</div>
+    <button class="expand-btn">展开</button>
+    <div class="card-detail">
+      风控需警惕如卡商批量号段（卖卡/虚号）、猫池（大批量接码设备）、群控系统（自动操控N台手机或模拟器）等黑灰产业链。<br>
+      常见手法：“低成本批量”+“伪装真人”行为组合，流程包括买卡→猫池接码→群控批量注册和领券→小额多笔拆单提现。<br>
+      有效防法包括多维设备指纹、行为序列建模、社群团伙网络图挖掘，以及动态规则热加载。
+    </div>
+  </div>
+  
+  <!-- 反爬虫手段 -->
+  <div class="card" tabindex="0">
+    <div class="card-header"><svg class="svg-graph" viewBox="0 0 50 49"><ellipse cx="25" cy="24" rx="22" ry="19" fill="#9cccfb" /><rect x="17" y="10" width="15" height="12" rx="5" fill="#4ca3f7" opacity=".45"/><ellipse cx="25" cy="35" rx="9" ry="5" fill="#5bb6f9" opacity=".8"/></svg>反爬虫策略</div>
+    <div class="card-brief">分为检测和对抗两大类。检测主要依据请求频率、UA信息、请求头完整度、行为路径、设备指纹、验证码等特征；对抗手段包括前端动态渲染、数据混淆、接口签名、IP代理识别和蜜罐链接。</div>
+    <button class="expand-btn">展开</button>
+    <div class="card-detail">
+      检测策略：监控短时高频请求IP/账号、异常UA、缺失/非标准Header、无Cookie/Referer/Accept、不走正常浏览操作路径、设备Canvas/WebGL等高一致性特征。<br>
+      对抗手段：部分页面依赖大前端动态渲染（React/Vue等）、数据/结构加密混淆、接口token+签名防伪、IP信誉校验和频繁代理识别、嵌入蜜罐诱捕URL等。<br>
+      综合手段实现自动区分爬虫与真实用户，提升平台安全门槛。
+    </div>
+  </div>
+
+  <!-- 攻防对抗与模型 -->
+  <div class="card" tabindex="0">
+    <div class="card-header"><svg class="svg-graph" viewBox="0 0 40 40"><ellipse cx="20" cy="20" rx="15" ry="15" fill="#bae7b4"/><rect x="9" y="18" width="22" height="6" rx="3" fill="#68ad67" opacity=".5" /><ellipse cx="20" cy="13" rx="8" ry="4" fill="#65b565" opacity=".47"/></svg>攻防对抗</div>
+    <div class="card-brief">风控场景是黑灰产与平台的持续对抗战。攻击方采用特征扰动（如换IP/设备、模拟用户行为、打散操作）、规则绕过（拆单、养号、伪造邀请链）及模型对抗（投毒、探针、生成对抗样本）；平台则强化特征检测、规则热加载、A/B测试、联动模型融合与在线学习，并加强对特征漂移的自动化监控。</div>
+    <button class="expand-btn">展开</button>
+    <div class="card-detail">
+      结合对抗训练、扰动特征注入和多模型融合（XGBoost/NN/规则）、利用Flink等实时特征流，持续提升防御韧性，平台迭代速度成为制胜关键。
+      <svg viewBox="0 0 180 80" style="margin:1.2em auto;display:block;">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#666"/>
+          </marker>
+        </defs>
+        <circle cx="40" cy="25" r="12" fill="#ff6b6b"/>
+        <circle cx="140" cy="25" r="12" fill="#4ecdc4"/>
+        <text x="40" y="29" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">攻击方</text>
+        <text x="140" y="29" text-anchor="middle" font-size="10" fill="#fff" font-weight="bold">防御方</text>
+        <text x="40" y="42" text-anchor="middle" font-size="8" fill="#333">特征扰动</text>
+        <text x="140" y="42" text-anchor="middle" font-size="8" fill="#333">规则升级</text>
+        <path d="M52,25 L128,25" stroke="#666" stroke-width="2" marker-end="url(#arrow)" fill="none"/>
+        <text x="90" y="20" text-anchor="middle" font-size="9" fill="#666">对抗</text>
+        <path d="M128,35 L52,35" stroke="#666" stroke-width="2" marker-end="url(#arrow)" fill="none"/>
+        <text x="90" y="50" text-anchor="middle" font-size="9" fill="#666">迭代</text>
+        <text x="90" y="68" text-anchor="middle" font-size="10" fill="#2870d0" font-weight="bold">军备竞赛</text>
+      </svg>
+      <div style="text-align:center;font-size:.95em;color:#666;margin-bottom:.8em;">攻防对抗循环：攻击方扰动→防御方升级→持续迭代</div>
+    </div>
+  </div>
+
+  <!-- 经典模型与算法方法 -->
+  <div class="card" tabindex="0">
+    <div class="card-header"><svg class="svg-shalou" viewBox="0 0 86 74"><ellipse cx="43" cy="13" rx="38" ry="10" fill="#e4dcf8"/><ellipse cx="43" cy="61" rx="38" ry="10" fill="#e4dcf8"/><polygon points="25,18 61,18 43,45" fill="#d9bffb"/><polygon points="25,56 61,56 43,36" fill="#d9bffb"/><rect x="39" y="36" width="8" height="8" rx="4" fill="#ac82f7"/><circle cx="43" cy="41" r="1.7" fill="#8a53ce"/></svg>经典模型方法</div>
+    <div class="card-brief">模型体系由XGBoost/LightGBM等决策树为业务主力，异常检测推荐孤立森林和Autoencoder沙漏结构，配合梯度/动量优化、学习率衰减等调参技巧，适应风控业务特性。</div>
+    <button class="expand-btn">展开</button>
+    <div class="card-detail">
+      XGBoost/LightGBM擅长处理样本非均衡、特征解释性强，是主力模型。孤立森林无需标签，适于无监督异常检测；Autoencoder通过沙漏结构实现输入压缩-还原，重构误差高可判定异常。
+      <svg class="svg-shalou" viewBox="0 0 120 100" style="margin:1.2em auto;display:block;width:160px;height:110px;">
+        <ellipse cx="60" cy="20" rx="50" ry="12" fill="#e4dcf8"/>
+        <ellipse cx="60" cy="80" rx="50" ry="12" fill="#e4dcf8"/>
+        <polygon points="35,25 85,25 60,55" fill="#d9bffb"/>
+        <polygon points="35,75 85,75 60,45" fill="#d9bffb"/>
+        <rect x="55" y="47" width="10" height="10" rx="5" fill="#ac82f7"/>
+        <circle cx="60" cy="52" r="2" fill="#8a53ce"/>
+        <text x="60" y="15" text-anchor="middle" font-size="12" fill="#8a53ce" font-weight="bold">输入层</text>
+        <text x="60" y="50" text-anchor="middle" font-size="12" fill="#8a53ce" font-weight="bold">压缩层</text>
+        <text x="60" y="88" text-anchor="middle" font-size="12" fill="#8a53ce" font-weight="bold">输出层</text>
+      </svg>
+      <div style="text-align:center;font-size:.95em;color:#7b3fd1;margin-bottom:.8em;">AutoEncoder沙漏结构示意：正常数据重构误差小，异常数据误差大</div>
+      <ul style='margin:0 0 .2em 1.1em;'>
+        <li>常用优化算法：SGD、Adam、Momentum。</li>
+        <li>调参思路：合理设定学习率和动量，衰减机制适用后期精细训练，可选Nesterov加速。</li>
+      </ul>
+      重构误差判别法：正常用户数据重构误差小，羊毛党或异常用户误差大，超过阈值即预警。
+    </div>
+  </div>
+
+  <!-- 设备指纹卡片 -->
+  <div class="card" tabindex="0">
+    <div class="card-header"><svg class="svg-graph" viewBox="0 0 42 42"><rect x="6" y="6" width="30" height="30" rx="9" fill="#d7fbf2"/><ellipse cx="21" cy="21" rx="12" ry="12" fill="#a7ecee"/><ellipse cx="21" cy="21" rx="5" ry="5" fill="#56baba"/></svg>设备指纹</div>
+    <div class="card-brief">融合了IMEI、MAC、CPU、屏幕分辨率、传感器、操作系统、UA信息、字体、时区、浏览器Canvas/WebGL/音频特征、鼠标轨迹与输入等多维特征，通过hash形成高唯一性ID，是识别批量与伪装的利器。</div>
+    <button class="expand-btn">展开</button>
+    <div class="card-detail">
+      各大风控厂商常用多模态设备指纹方案，如Ark、同盾、ThreatMetrix等，对抗虚拟机、代理设备与多号批量注册。
+    </div>
+  </div>
+
+  <!-- 社区/图检测卡片 -->
+  <div class="card" tabindex="0">
+    <div class="card-header"><svg class="svg-graph" viewBox="0 0 50 50"><ellipse cx="25" cy="26" rx="20" ry="14" fill="#ffe3c4"/><ellipse cx="25" cy="19" rx="10" ry="3" fill="#fdc78c"/><ellipse cx="25" cy="38" rx="9" ry="3" fill="#fdc78c"/></svg>社区/图检测</div>
+    <div class="card-brief">GNN、LPA(标签传播)、Louvain(社区发现)等多种图算法联动，自动识别团伙、打分聚类异常账号与行为密集关联群，结合关系图谱和传播路径提升团伙拦截精准度。</div>
+    <button class="expand-btn">展开</button>
+    <div class="card-detail">
+      特色方法包括：Louvain高效社区检测算法（贪心优化模块度，实现自动发现紧密子群，公式Q=(1/2m)Σ[Aij-(ki*kj/2m)]δ(ci,cj)）；GNN用于识别异常关系结构；KMeans/GMM支持软/硬聚类，提升可解释性。<br>
+      <svg viewBox="0 0 90 46" style="margin:1.2em auto;display:block;">
+        <ellipse cx="45" cy="23" rx="38" ry="15" fill="#fde5b6"/>
+        <ellipse cx="18" cy="15" rx="7" ry="7" fill="#ffb44d"/>
+        <ellipse cx="72" cy="32" rx="7" ry="7" fill="#ffb44d"/>
+        <ellipse cx="35" cy="35" rx="5" ry="5" fill="#fd992a"/>
+        <ellipse cx="62" cy="13" rx="5" ry="5" fill="#fd992a"/>
+        <ellipse cx="50" cy="25" rx="4" ry="4" fill="#faa624"/>
+        <ellipse cx="41" cy="14" rx="4" ry="4" fill="#faa624"/>
+        <ellipse cx="58" cy="31" rx="3.6" ry="3.6" fill="#faa624"/>
+        <line x1="18" y1="15" x2="35" y2="35" stroke="#ffb44d" stroke-width="1"/>
+        <line x1="35" y1="35" x2="50" y2="25" stroke="#ffb44d" stroke-width="1"/>
+        <line x1="50" y1="25" x2="62" y2="13" stroke="#ffb44d" stroke-width="1"/>
+        <line x1="62" y1="13" x2="72" y2="32" stroke="#ffb44d" stroke-width="1"/>
+        <text x="45" y="40" text-anchor="middle" font-size="7" fill="#f08000">团伙社区检测</text>
+      </svg>
+      <div style="text-align:center;font-size:.95em;color:#f08000;margin-bottom:.8em;">朋友圈太密=团伙，社群检测自动圈定并批量拦截</div>
+      社区发现指标超过阈值，团伙批量拦截。
+    </div>
+  </div>
+
+  <!-- 模型与指标评估卡片 -->
+  <div class="card" tabindex="0">
+    <div class="card-header"><svg width="38" height="24"><polyline points="3,21 8,18 18,12 33,3" stroke="#42a5f5" stroke-width="2.6" fill="none"/></svg>模型与评估</div>
+    <div class="card-brief">风控主流模型和指标包含序列编码、Word2Vec、LSTM、GRU、Transformer等，配合ROC曲线、查全率（TPR）与误伤率（FPR）实现体系化效果评价。</div>
+    <button class="expand-btn">展开</button>
+    <div class="card-detail">
+      序列模型可将用户行为全链路编码，捕捉异常序列特征。Word2Vec适合短序列事件，LSTM/GRU适合循环记忆，Transformer擅长长序列并行与上下文关联（QK-softmax-V结构）。
+      <svg width="242" height="110" style="margin:1.2em auto;display:block;">
+        <polyline points="28,90 54,72 104,40 174,15 225,12" stroke="#1976d2" stroke-width="4" fill="none"/>
+        <polyline points="28,90 28,20 230,20" stroke="#aaa" stroke-width="1.7"/>
+        <text x="235" y="24" font-size="13" fill="#424242">TPR (查全率)</text>
+        <text x="7" y="33" font-size="13" fill="#494a6a" transform="rotate(-40 7,33)">FPR (误伤率)</text>
+        <text x="120" y="50" text-anchor="middle" font-size="10" fill="#1976d2">ROC曲线</text>
+      </svg>
+      <div style="text-align:center;font-size:.95em;color:#2970b8;margin-bottom:.8em;">TPR=TP/(TP+FN) 衡量漏检羊毛党的比例；FPR=FP/(FP+TN) 衡量误伤好人的比例</div>
+      <ul style='margin:0 0 .2em 1.1em;'>
+        <li>GRU门控网络，LSTM轻量替代，风控常用。</li>
+        <li>ROC曲线评估模型，TPR=TP/(TP+FN)，衡量漏检率；FPR=FP/(FP+TN)，衡量误伤率。</li>
+      </ul>
+      高斯混合模型（GMM）适合概率软聚类，能发现模糊交界用户。有效的评估及指标体系能保障风控模型实用性与容错弹性。
+    </div>
+  </div>
+</div>
+</main>
+<footer style="background:#f7fbfe;text-align:center;padding:1.2em 0;color:#789;letter-spacing:1px;font-size:.98em;">
+  <div>内容摘要与设计 © 风控笔记2.txt &middot; 最后更新 2025年 &middot; 交互页面By AI 助理</div>
+</footer>
+<script>
+// 流程图交互提示（tooltips逻辑）
+const flowLabels = [
+  {id:'dataLabel', info:'实时流(Kafka)+离线库(Hive/ClickHouse)，全量采集用户行为与设备/交易日志'},
+  {id:'featureLabel', info:'Flink/Redis特征服务+离线平台(Spark)，生成画像/统计特征'},
+  {id:'ruleLabel', info:'Drools/自研规则平台，显式规则快速拦截异常如IP频繁/邀请链异常'},
+  {id:'modelLabel', info:'XGBoost/LightGBM离线建模 + ONNX/PMML实时推理，得分判高危用户'},
+  {id:'decisionLabel', info:'规则+模型融合决策：加权/级联，支持A/B实验和策略灵活调整'},
+  {id:'decisionLabelSub', info:'融合策略：加权&级联融合，支持策略自动化切换'},
+  {id:'execLabel', info:'风控动作自动下发（限流/封号），Dashboard监控与告警'}
+];
+const tooltip = document.getElementById('tooltip');
+flowLabels.forEach(({id, info}) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('mousemove', e => {
+    tooltip.textContent = info;
+    tooltip.style.opacity = 1;
+    // 获取鼠标位置
+    let mouseX = e.clientX;
+    let mouseY = e.clientY;
+    // 计算tooltip显示在鼠标右下方
+    let top = mouseY + window.scrollY -125; // 鼠标下方15px
+    let left = mouseX + window.scrollX-255; // 鼠标右侧15px
+    tooltip.style.left = left+'px';
+    tooltip.style.top = top+'px';
+    // 确保tooltip不会超出屏幕边界
+    const tooltipRect = tooltip.getBoundingClientRect();
+    if (tooltipRect.right > window.innerWidth) {
+      left = window.innerWidth - tooltipRect.width - 10;
+      tooltip.style.left = left+'px';
+    }
+    if (tooltipRect.bottom > window.innerHeight + window.scrollY) {
+      top = mouseY + window.scrollY - tooltipRect.height - 10;
+      tooltip.style.top = top+'px';
+    }
+  });
+  el.addEventListener('mouseleave', () => {
+    tooltip.style.opacity = 0;
+  });
+});
+// 卡片展开收起交互
+[...document.querySelectorAll('.card')].forEach(card => {
+  const btn = card.querySelector('.expand-btn');
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    card.classList.toggle('expanded');
+    btn.textContent = card.classList.contains('expanded') ? '收起' : '展开';
+  });
+  card.addEventListener('keydown', e => {
+    if(e.key==='Enter' || e.key===' '){
+      card.classList.toggle('expanded');
+      btn.textContent = card.classList.contains('expanded') ? '收起' : '展开';
+    }
+  });
+  // 卡片整体tab可用+回车
+});
+</script>
+</body>
+</html>
+
