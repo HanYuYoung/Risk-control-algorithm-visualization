@@ -239,8 +239,40 @@ def health():
     return jsonify({
         'status': 'ok',
         'model_loaded': risk_model.is_trained,
+        'current_model': risk_model.current_model_type,
+        'available_models': risk_model.get_available_models(),
         'timestamp': datetime.now().isoformat()
     }), 200
+
+@app.route('/api/models', methods=['GET'])
+def get_models():
+    """获取可用模型列表"""
+    return jsonify({
+        'available_models': risk_model.get_available_models(),
+        'current_model': risk_model.current_model_type,
+        'is_trained': risk_model.is_trained
+    }), 200
+
+@app.route('/api/models/<model_type>', methods=['POST'])
+def set_model(model_type):
+    """切换模型
+    
+    Args:
+        model_type: 'xgb', 'rf', 'gbdt', 'lgb'
+    """
+    if risk_model.set_model(model_type):
+        return jsonify({
+            'success': True,
+            'message': f'模型已切换为: {model_type}',
+            'current_model': risk_model.current_model_type,
+            'available_models': risk_model.get_available_models()
+        }), 200
+    else:
+        return jsonify({
+            'success': False,
+            'error': f'模型 {model_type} 不可用',
+            'available_models': risk_model.get_available_models()
+        }), 400
 
 @app.route('/api/start_attack', methods=['POST'])
 def start_attack():
@@ -321,25 +353,15 @@ def get_action(risk_level):
         return '拦截，加入黑名单'
 
 def init_risk_model():
-    """初始化风控模型"""
+    """初始化风控模型（加载所有可用模型）"""
     print("正在加载风控模型...")
-    # 兼容老路径：如果新路径不存在而旧路径存在，则优先旧路径
-    new_xgb = MODEL_CONFIG['xgb_model_path']
-    new_iso = MODEL_CONFIG['isolation_forest_path']
-    old_models_dir = os.path.join(DATA_DIR, 'models')
-    old_xgb = os.path.join(old_models_dir, 'xgb_model.pkl')
-    old_iso = os.path.join(old_models_dir, 'isolation_forest.pkl')
-
-    xgb_path = new_xgb if os.path.exists(new_xgb) or not os.path.exists(old_xgb) else old_xgb
-    iso_path = new_iso if os.path.exists(new_iso) or not os.path.exists(old_iso) else old_iso
-
-    risk_model.load_models(
-        xgb_path=xgb_path,
-        isolation_forest_path=iso_path
-    )
+    
+    risk_model.load_models()
     
     if risk_model.is_trained:
-        print("[OK] 风控模型加载成功")
+        print(f"[OK] 风控模型加载成功")
+        print(f"  当前使用模型: {risk_model.current_model_type.upper()}")
+        print(f"  可用模型: {', '.join([m.upper() for m in risk_model.get_available_models()])}")
     else:
         print("[WARN] 风控模型未训练，将使用基于规则的检测")
 

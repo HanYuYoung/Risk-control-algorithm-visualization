@@ -4,6 +4,7 @@ numpy
 pandas
 scikit-learn
 xgboost
+lightgbm
 tensorflow
 threading
 requests

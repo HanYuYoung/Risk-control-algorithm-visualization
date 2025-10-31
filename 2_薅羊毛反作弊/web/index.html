@@ -274,12 +274,51 @@
             background: #f5f5f5;
             color: #666;
         }
+        
+        .model-select {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .model-select select {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 150px;
+            cursor: pointer;
+        }
+        
+        .model-select select:focus {
+            outline: none;
+            border-color: #1890ff;
+        }
+        
+        .model-info {
+            font-size: 13px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>羊毛党反作弊系统</h1>
+        </div>
+        
+        <div class="panel">
+            <div class="section-title">模型选择</div>
+            <div class="model-select">
+                <label for="modelSelect">当前模型:</label>
+                <select id="modelSelect" onchange="changeModel()">
+                    <option value="xgb">XGBoost</option>
+                    <option value="rf">Random Forest</option>
+                    <option value="gbdt">GBDT</option>
+                    <option value="lgb">LightGBM</option>
+                </select>
+                <span class="model-info" id="modelInfo">加载中...</span>
+            </div>
         </div>
         
         <div class="panel">
@@ -397,6 +436,78 @@
         let statsInterval = null;
         let logCount = 0;
         const MAX_LOG_ITEMS = 100;
+        
+        const MODEL_NAMES = {
+            'xgb': 'XGBoost',
+            'rf': 'Random Forest',
+            'gbdt': 'GBDT',
+            'lgb': 'LightGBM'
+        };
+        
+        // 加载可用模型列表
+        function loadModels() {
+            fetch(`${API_BASE}/api/models`)
+                .then(res => res.json())
+                .then(data => {
+                    const select = document.getElementById('modelSelect');
+                    const info = document.getElementById('modelInfo');
+                    
+                    // 清空选项
+                    select.innerHTML = '';
+                    
+                    // 添加可用模型
+                    if (data.available_models && data.available_models.length > 0) {
+                        data.available_models.forEach(modelType => {
+                            const option = document.createElement('option');
+                            option.value = modelType;
+                            option.textContent = MODEL_NAMES[modelType] || modelType.toUpperCase();
+                            if (modelType === data.current_model) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+                        
+                        info.textContent = `当前: ${MODEL_NAMES[data.current_model] || data.current_model.toUpperCase()}`;
+                    } else {
+                        info.textContent = '没有可用模型，请先训练模型';
+                    }
+                })
+                .catch(err => {
+                    console.error('加载模型列表失败:', err);
+                });
+        }
+        
+        // 切换模型
+        function changeModel() {
+            const select = document.getElementById('modelSelect');
+            const modelType = select.value;
+            const info = document.getElementById('modelInfo');
+            
+            info.textContent = '切换中...';
+            
+            fetch(`${API_BASE}/api/models/${modelType}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    info.textContent = `已切换为: ${MODEL_NAMES[modelType] || modelType.toUpperCase()}`;
+                    console.log('模型切换成功:', data);
+                } else {
+                    info.textContent = '切换失败: ' + (data.error || '未知错误');
+                    console.error('模型切换失败:', data);
+                    // 重新加载模型列表
+                    loadModels();
+                }
+            })
+            .catch(err => {
+                info.textContent = '切换失败: ' + err.message;
+                console.error('模型切换失败:', err);
+            });
+        }
         
         function updateStats() {
             fetch(`${API_BASE}/api/stats`)
@@ -546,7 +657,8 @@
             });
         }
         
-        // 页面加载时开始轮询
+        // 页面加载时初始化
+        loadModels();
         updateStats();
         statsInterval = setInterval(updateStats, 2000);
     </script>

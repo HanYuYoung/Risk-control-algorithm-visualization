@@ -27,12 +27,16 @@ RISK_THRESHOLD_HIGH = 0.8  # 高风险阈值
 # 模型配置（保存/加载路径）
 MODEL_CONFIG = {
     'xgb_model_path': os.path.join(ARTIFACTS_DIR, 'xgb_model.pkl'),
-    'lstm_model_path': os.path.join(ARTIFACTS_DIR, 'lstm_model.pkl'),
+    'rf_model_path': os.path.join(ARTIFACTS_DIR, 'rf_model.pkl'),
+    'gbdt_model_path': os.path.join(ARTIFACTS_DIR, 'gbdt_model.pkl'),
+    'lgb_model_path': os.path.join(ARTIFACTS_DIR, 'lgb_model.pkl'),
     'isolation_forest_path': os.path.join(ARTIFACTS_DIR, 'isolation_forest.pkl'),
     'ensemble_weights': {
         'supervised': 0.6,
         'unsupervised': 0.4
-    }
+    },
+    # 默认使用的模型类型
+    'default_model': 'xgb'  # 可选: 'xgb', 'rf', 'gbdt', 'lgb'
 }
 
 # 攻击模拟配置

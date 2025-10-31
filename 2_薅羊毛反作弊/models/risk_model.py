@@ -1,5 +1,5 @@
 """
-风控模型 - AI驱动的风险检测
+风控模型 - AI驱动的风险检测（支持多模型选择）
 """
 import numpy as np
 import os
@@ -10,20 +10,30 @@ import joblib
 from sklearn.ensemble import IsolationForest
 import json
 from datetime import datetime
+from config import MODEL_CONFIG
 
 class RiskModel:
     """风控模型"""
     
     def __init__(self):
-        self.xgb_model = None
-        self.lstm_model = None
+        self.models = {
+            'xgb': None,
+            'rf': None,
+            'gbdt': None,
+            'lgb': None
+        }
         self.isolation_forest = None
         self.feature_extractor = None
-        self.ensemble_weights = {'supervised': 0.6, 'unsupervised': 0.4}
+        self.current_model_type = MODEL_CONFIG.get('default_model', 'xgb')
+        self.ensemble_weights = MODEL_CONFIG.get('ensemble_weights', {'supervised': 0.6, 'unsupervised': 0.4})
         self.is_trained = False
     
-    def load_models(self, xgb_path=None, isolation_forest_path=None):
-        """加载模型"""
+    def load_models(self, model_type=None):
+        """加载模型
+        
+        Args:
+            model_type: 要加载的模型类型，None表示加载所有可用模型
+        """
         try:
             from models.feature_extractor import FeatureExtractor
         except ImportError:
@@ -34,22 +44,58 @@ class RiskModel:
         
         self.feature_extractor = FeatureExtractor()
         
-        # 如果模型文件存在，加载它们
-        if xgb_path and os.path.exists(xgb_path):
-            try:
-                self.xgb_model = joblib.load(xgb_path)
-                print(f"[OK] 已加载XGBoost模型: {xgb_path}")
-            except:
-                print(f"[WARN] 无法加载XGBoost模型: {xgb_path}")
+        # 加载所有可用的监督学习模型
+        model_paths = {
+            'xgb': MODEL_CONFIG['xgb_model_path'],
+            'rf': MODEL_CONFIG['rf_model_path'],
+            'gbdt': MODEL_CONFIG['gbdt_model_path'],
+            'lgb': MODEL_CONFIG['lgb_model_path']
+        }
         
-        if isolation_forest_path and os.path.exists(isolation_forest_path):
-            try:
-                self.isolation_forest = joblib.load(isolation_forest_path)
-                print(f"[OK] 已加载IsolationForest模型: {isolation_forest_path}")
-            except:
-                print(f"[WARN] 无法加载IsolationForest模型: {isolation_forest_path}")
+        loaded_models = []
+        for model_name, model_path in model_paths.items():
+            if os.path.exists(model_path):
+                try:
+                    self.models[model_name] = joblib.load(model_path)
+                    loaded_models.append(model_name)
+                    print(f"[OK] 已加载{model_name.upper()}模型: {model_path}")
+                except Exception as e:
+                    print(f"[WARN] 无法加载{model_name.upper()}模型: {e}")
         
-        self.is_trained = (self.xgb_model is not None) and (self.isolation_forest is not None)
+        # 加载无监督模型
+        iso_path = MODEL_CONFIG['isolation_forest_path']
+        if os.path.exists(iso_path):
+            try:
+                self.isolation_forest = joblib.load(iso_path)
+                print(f"[OK] 已加载IsolationForest模型: {iso_path}")
+            except Exception as e:
+                print(f"[WARN] 无法加载IsolationForest模型: {e}")
+        
+        # 设置当前使用的模型
+        if model_type and model_type in self.models and self.models[model_type] is not None:
+            self.current_model_type = model_type
+        elif loaded_models:
+            # 使用第一个加载成功的模型
+            self.current_model_type = loaded_models[0]
+            if model_type and model_type not in loaded_models:
+                print(f"[WARN] 请求的模型 {model_type} 未加载，使用默认模型: {self.current_model_type}")
+        
+        self.is_trained = len(loaded_models) > 0
+    
+    def set_model(self, model_type):
+        """设置当前使用的模型
+        
+        Args:
+            model_type: 'xgb', 'rf', 'gbdt', 'lgb'
+        """
+        if model_type in self.models and self.models[model_type] is not None:
+            self.current_model_type = model_type
+            return True
+        return False
+    
+    def get_available_models(self):
+        """获取已加载的模型列表"""
+        return [name for name, model in self.models.items() if model is not None]
     
     def predict(self, request_data):
         """
@@ -76,9 +122,10 @@ class RiskModel:
         
         # 监督模型预测
         supervised_score = 0.0
-        if self.xgb_model:
+        current_model = self.models[self.current_model_type]
+        if current_model:
             try:
-                supervised_score = float(self.xgb_model.predict_proba(features_2d)[0][1])
+                supervised_score = float(current_model.predict_proba(features_2d)[0][1])
             except:
                 supervised_score = 0.5
         
@@ -88,8 +135,9 @@ class RiskModel:
             try:
                 anomaly_score = self.isolation_forest.decision_function(features_2d)[0]
                 # 将异常分数转换为0-1风险分数
-                # IsolationForest返回值：-1表示异常，1表示正常
-                unsupervised_score = max(0, (1 - anomaly_score) / 2)
+                # IsolationForest返回值：负值表示异常，正值表示正常
+                # 归一化到0-1范围
+                unsupervised_score = max(0, min(1, (1 - anomaly_score) / 2))
             except:
                 unsupervised_score = 0.5
         
@@ -107,6 +155,7 @@ class RiskModel:
             'risk_level': risk_level,
             'risk_type': risk_type,
             'details': {
+                'model_type': self.current_model_type,
                 'supervised_score': float(supervised_score),
                 'unsupervised_score': float(unsupervised_score),
                 'features': features.tolist(),
@@ -164,7 +213,7 @@ class RiskModel:
                     risk_type = 'IP聚集'
                 elif features[1] > 3:
                     risk_type = '设备聚集'
-                elif features[5] < 0.5:
+                elif len(features) > 5 and features[5] < 0.5:
                     risk_type = '行为异常'
             return 'review', risk_type
         else:
@@ -173,7 +222,6 @@ class RiskModel:
             if features is not None:
                 if features[0] > 5 and features[1] > 3:
                     risk_type = 'IP聚集+设备聚集'
-                elif features[6] == 1:  # 黑名单手机号
+                elif len(features) > 6 and features[6] == 1:  # 黑名单手机号
                     risk_type = '垃圾账号'
             return 'reject', risk_type
-

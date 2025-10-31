@@ -2,36 +2,33 @@
 
 基于AI的实时风控检测系统，用于识别和拦截电商平台的羊毛党批量注册行为。
 
-![Web监控界面](页面.jpeg)
-
 ## 项目结构
 
 ```
 risk/
-├── config.py                 # 配置文件
-├── requirements.txt          # 依赖包
-├── sitecustomize.py         # Python全局配置（禁用__pycache__）
-├── app.py                   # 主启动文件（Web UI）
-├── generate_data.py         # 训练数据生成脚本
-├── models/                  # 模型相关
-│   ├── feature_extractor.py # 特征提取
-│   ├── risk_model.py        # 风控模型
-│   ├── train_model.py       # 模型训练
-│   └── models/              # 保存训练好的模型
-│       ├── xgb_model.pkl    # XGBoost模型
-│       └── isolation_forest.pkl # Isolation Forest模型
-├── simulator/               # 攻击模拟器
-│   └── attacker.py          # 羊毛党模拟器
-├── web/                     # Web UI和API服务
-│   ├── server.py            # Flask服务器（API接口）
-│   └── index.html           # 前端页面
-├── utils/                   # 工具函数
-│   ├── data_generator.py    # 数据生成器
-│   └── common.py            # 通用工具函数
-└── data/                    # 数据目录
-    ├── training_data.csv    # 训练数据
-    └── log/                 # 实时日志文件
-        └── attack_*.jsonl   # 每次模拟运行的日志
+├── config.py                        # 配置文件
+├── requirements.txt                 # 依赖包
+├── sitecustomize.py                 # Python全局配置（禁用__pycache__）
+├── app.py                           # 主启动文件（Web UI）
+├── generate_data.py                 # 训练数据生成脚本
+├── models/                          # 模型相关
+│   ├── feature_extractor.py         # 特征提取
+│   ├── risk_model.py                # 风控模型
+│   ├── train_model.py               # 模型训练 xgboost+孤立森林
+│   ├── train_model_advance.py       # 模型训练 多模型+自动搜索最优参数
+│   └── models/                      # 保存训练好的模型
+├── simulator/                       # 攻击模拟器
+│   └── attacker.py                  # 羊毛党模拟器
+├── web/                             # Web UI和API服务
+│   ├── server.py                    # Flask服务器（API接口）
+│   └── index.html                   # 前端页面
+├── utils/                           # 工具函数
+│   ├── data_generator.py            # 数据生成器
+│   └── common.py                    # 通用工具函数
+└── data/                            # 数据目录
+    ├── training_data.csv            # 训练数据
+    └── log/                         # 实时日志文件
+        └── attack_*.jsonl           # 每次模拟运行的日志
 ```
 
 ## 快速开始
