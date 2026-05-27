@@ -4,8 +4,6 @@
 
 **技术栈**：Python | 树模型（XGBoost、LightGBM、孤立森林等）| 图模型（GCN、GAT等）| 时序模型（LSTM、Transformer等）| louvain社区发现算法 
 
-**目标**：投递 **风控岗** 
-
 ---
 
 ## 📁 项目内容
